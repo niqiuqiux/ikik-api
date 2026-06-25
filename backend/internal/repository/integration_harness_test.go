@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	dbent "ikik-api/ent"
 	_ "ikik-api/ent/runtime"
 	"ikik-api/internal/pkg/timezone"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -330,6 +330,7 @@ func (h prefixHook) prefixCmd(cmd redisclient.Cmder) {
 	switch strings.ToLower(cmd.Name()) {
 	case "get", "set", "setnx", "setex", "psetex", "incr", "decr", "incrby", "expire", "pexpire", "ttl", "pttl",
 		"hgetall", "hget", "hset", "hdel", "hincrbyfloat", "exists",
+		"sadd", "scard", "sismember", "smembers", "srem",
 		"zadd", "zcard", "zrange", "zrangebyscore", "zrem", "zremrangebyscore", "zrevrange", "zrevrangebyscore", "zscore":
 		prefixOne(1)
 	case "mget":

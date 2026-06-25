@@ -1341,25 +1341,26 @@ func (r *usageLogRepository) GetByID(ctx context.Context, id int64) (log *servic
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		// 保持主错误优先；仅在无错误时回传 Close 失败。
-		// 同时清空返回值，避免误用不完整结果。
-		if closeErr := rows.Close(); closeErr != nil && err == nil {
-			err = closeErr
-			log = nil
-		}
-	}()
 	if !rows.Next() {
 		if err = rows.Err(); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		if err = rows.Close(); err != nil {
 			return nil, err
 		}
 		return nil, service.ErrUsageLogNotFound
 	}
 	log, err = scanUsageLog(rows)
 	if err != nil {
+		_ = rows.Close()
 		return nil, err
 	}
 	if err = rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, err
+	}
+	if err = rows.Close(); err != nil {
 		return nil, err
 	}
 	logs := []service.UsageLog{*log}

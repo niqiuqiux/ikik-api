@@ -926,6 +926,9 @@ func (r *apiKeyRepository) withTx(ctx context.Context, fn func(txCtx context.Con
 		return fn(ctx, tx.Client())
 	}
 	tx, err := r.client.Tx(ctx)
+	if errors.Is(err, dbent.ErrTxStarted) {
+		return fn(ctx, r.client)
+	}
 	if err != nil {
 		return fmt.Errorf("begin api key transaction: %w", err)
 	}
