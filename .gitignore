@@ -94,20 +94,11 @@ test/
 dist/
 build/
 release/
-
-# 后端嵌入的前端构建产物
-# Keep a placeholder file so `//go:embed all:dist` always has a match in CI/lint,
-# while still ignoring generated frontend build outputs.
-backend/internal/web/dist/
 !backend/internal/web/dist/
 backend/internal/web/dist/*
 !backend/internal/web/dist/.keep
-
-# 后端运行时缓存数据
 backend/data/
 data/
-
-# 本地备份、数据库导出和归档包，禁止进入开源仓库
 backups/
 *.dump
 *.sql.gz
@@ -126,16 +117,9 @@ backups/
 *.p12
 *.pfx
 
-# ===================
-# 本地配置文件（包含敏感信息）
-# ===================
 backend/config.yaml
 deploy/config.yaml
 backend/.installed
-
-# ===================
-# 其他
-# ===================
 tests
 CLAUDE.md
 .claude
@@ -161,7 +145,6 @@ aicodex
 output/
 test/images/
 
-# Windows 保留设备名产生的虚拟文件（误创建，git 无法索引）
 nul
 /issues/
 /.codex_tmp/

@@ -106,3 +106,10 @@ linters:
         - -ST1020  # Comment on exported method format
         - -ST1021  # Comment on exported type format
         - -ST1022  # Comment on exported variable format
+
+  exclusions:
+    rules:
+      - path: ^(cmd/server/main\.go|internal/server/http\.go)$
+        linters:
+          - staticcheck
+        text: "SA1019: .*h2c"
