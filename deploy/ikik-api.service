@@ -1,6 +1,6 @@
 [Unit]
 Description=ikik-api - AI API Gateway Platform
-Documentation=https://github.com/ikik-api/ikik-api
+Documentation=https://github.com/wenyi401/ikik-api
 After=network.target postgresql.service redis.service
 Wants=postgresql.service redis.service
 

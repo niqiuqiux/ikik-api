@@ -2,7 +2,7 @@
 #
 # ikik-api Installation Script
 # ikik-api 安装脚本
-# Usage: curl -sSL https://raw.githubusercontent.com/ikik-api/ikik-api/main/deploy/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/wenyi401/ikik-api/main/deploy/install.sh | bash
 #
 
 set -e
@@ -16,7 +16,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="ikik-api/ikik-api"
+GITHUB_REPO="wenyi401/ikik-api"
 INSTALL_DIR="/opt/ikik-api"
 SERVICE_NAME="ikik-api"
 SERVICE_USER="ikik-api"

@@ -21,7 +21,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # GitHub raw content base URL
-GITHUB_RAW_URL="https://raw.githubusercontent.com/ikik-api/ikik-api/main/deploy"
+GITHUB_RAW_URL="https://raw.githubusercontent.com/wenyi401/ikik-api/main/deploy"
 
 # Print colored message
 print_info() {

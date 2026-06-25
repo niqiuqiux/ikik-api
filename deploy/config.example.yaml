@@ -4,7 +4,7 @@
 # Copy this file to /etc/ikik-api/config.yaml and modify as needed
 # 复制此文件到 /etc/ikik-api/config.yaml 并根据需要修改
 #
-# Documentation / 文档: https://github.com/ikik-api/ikik-api
+# Documentation / 文档: https://github.com/wenyi401/ikik-api
 
 # =============================================================================
 # Server Configuration

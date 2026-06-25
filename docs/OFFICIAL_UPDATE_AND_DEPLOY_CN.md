@@ -1,6 +1,6 @@
 # 官方版本合并与自定义镜像部署流程
 
-本文用于维护当前二开版本：在后续官方 `ikik-api/ikik-api` 发布新版本时，合并官方更新，同时保留本项目的个人账号、公共账号共享、分成结算、收益管理增强、凭证导入限制等二开功能。
+本文用于维护当前二开版本：在后续官方 `wenyi401/ikik-api` 发布新版本时，合并官方更新，同时保留本项目的个人账号、公共账号共享、分成结算、收益管理增强、凭证导入限制等二开功能。
 
 ## 当前基线
 
@@ -40,7 +40,7 @@ git push -u origin custom/main
 添加官方仓库为上游源：
 
 ```bash
-git remote add upstream https://github.com/ikik-api/ikik-api.git
+git remote add upstream https://github.com/wenyi401/ikik-api.git
 git fetch upstream --tags --prune
 ```
 
@@ -48,7 +48,7 @@ git fetch upstream --tags --prune
 
 ```bash
 git remote -v
-git remote set-url upstream https://github.com/ikik-api/ikik-api.git
+git remote set-url upstream https://github.com/wenyi401/ikik-api.git
 ```
 
 建议开启 Git 冲突复用记录，后续遇到重复冲突时可以减少手工处理：

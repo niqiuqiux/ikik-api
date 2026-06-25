@@ -128,7 +128,7 @@
 
                 <a
                   v-if="authStore.isAdmin"
-                  href="https://github.com/ikik-api/ikik-api"
+                  href="https://github.com/wenyi401/ikik-api"
                   target="_blank"
                   rel="noopener noreferrer"
                   @click="closeDropdown"

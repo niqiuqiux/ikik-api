@@ -1213,7 +1213,7 @@ func TestFilterCodexInput_DropsReasoningItemsRegardlessOfPreserveReferences(t *t
 	// chatgpt.com under store=false (forced by applyCodexOAuthTransform).
 	// They are never persisted upstream, so forwarding them produces a
 	// guaranteed 404 ("Item with id 'rs_...' not found"). Drop them
-	// regardless of preserveReferences. See: ikik-api/ikik-api issue #1957.
+	// regardless of preserveReferences. See: wenyi401/ikik-api issue #1957.
 
 	build := func() []any {
 		return []any{

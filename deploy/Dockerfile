@@ -76,7 +76,7 @@ FROM ${ALPINE_IMAGE}
 # Labels
 LABEL maintainer="ikik-api maintainers"
 LABEL description="ikik-api - AI API Gateway Platform"
-LABEL org.opencontainers.image.source="https://github.com/ikik-api/ikik-api"
+LABEL org.opencontainers.image.source="https://github.com/wenyi401/ikik-api"
 
 # Install runtime dependencies
 RUN apk add --no-cache \

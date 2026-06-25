@@ -376,7 +376,7 @@ const appStore = useAppStore()
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'ikik-api')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
-const githubUrl = 'https://github.com/ikik-api/ikik-api'
+const githubUrl = 'https://github.com/wenyi401/ikik-api'
 
 // ==================== Theme (same as HomeView) ====================
 
