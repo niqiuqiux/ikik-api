@@ -367,6 +367,13 @@ type ActivitySummary = {
   longestStreak: number
 }
 
+type ProfileShareData = {
+  files?: File[]
+  title?: string
+  text?: string
+  url?: string
+}
+
 const props = withDefaults(defineProps<{
   user: User | null
   linuxdoEnabled?: boolean
@@ -632,7 +639,7 @@ async function shareImage() {
     const filename = `ikik-profile-${props.user?.id || 'user'}.png`
     const file = new File([blob], filename, { type: 'image/png' })
     const navWithCanShare = navigator as Navigator & {
-      canShare?: (data: ShareData) => boolean
+      canShare?: (data: ProfileShareData) => boolean
     }
 
     if (

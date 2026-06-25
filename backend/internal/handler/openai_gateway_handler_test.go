@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	pkghttputil "ikik-api/internal/pkg/httputil"
-	"ikik-api/internal/server/middleware"
-	"ikik-api/internal/service"
 	coderws "github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	pkghttputil "ikik-api/internal/pkg/httputil"
+	"ikik-api/internal/server/middleware"
+	"ikik-api/internal/service"
 )
 
 func TestOpenAIHandleStreamingAwareError_JSONEscaping(t *testing.T) {
@@ -782,10 +782,25 @@ func newOpenAIHandlerForPreviousResponseIDValidation(t *testing.T, cache *concur
 func newOpenAIWSHandlerTestServer(t *testing.T, h *OpenAIGatewayHandler, subject middleware.AuthSubject) *httptest.Server {
 	t.Helper()
 	groupID := int64(2)
+	group := &service.Group{
+		ID:       groupID,
+		Platform: service.PlatformOpenAI,
+		Status:   service.StatusActive,
+	}
 	apiKey := &service.APIKey{
 		ID:      101,
 		GroupID: &groupID,
 		User:    &service.User{ID: subject.UserID},
+		Group:   group,
+		GroupRoutes: []service.APIKeyGroupRoute{{
+			APIKeyID:        101,
+			GroupID:         groupID,
+			Priority:        100,
+			Weight:          1,
+			Enabled:         true,
+			CooldownSeconds: 30,
+			Group:           group,
+		}},
 	}
 	router := gin.New()
 	router.Use(func(c *gin.Context) {

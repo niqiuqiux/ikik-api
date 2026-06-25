@@ -373,28 +373,28 @@ func TestP2Characterization_OpenAIResponsesWSTurn2ModerationCloseError(t *testin
 	usageRepo := &openAIWSUsageHandlerUsageLogRepoStub{created: make(chan *service.UsageLog, 4)}
 	billingCacheSvc := service.NewBillingCacheService(nil, nil, nil, nil, nil, nil, nil, cfg)
 	gatewaySvc := service.NewOpenAIGatewayService(
-		accountRepo, // accountRepo
-		nil,         // accountSharePolicyRepo
-		usageRepo,   // usageLogRepo
-		nil,         // usageBillingRepo
-		nil,         // userRepo
-		nil,         // userSubRepo
-		nil,         // userGroupRateRepo
-		nil,         // cache (GatewayCache)
-		cfg,         // cfg
-		nil,         // schedulerSnapshot
-		nil,         // concurrencyService
+		accountRepo,                         // accountRepo
+		nil,                                 // accountSharePolicyRepo
+		usageRepo,                           // usageLogRepo
+		nil,                                 // usageBillingRepo
+		nil,                                 // userRepo
+		nil,                                 // userSubRepo
+		nil,                                 // userGroupRateRepo
+		nil,                                 // cache (GatewayCache)
+		cfg,                                 // cfg
+		nil,                                 // schedulerSnapshot
+		nil,                                 // concurrencyService
 		service.NewBillingService(cfg, nil), // billingService
-		nil,         // rateLimitService
+		nil,                                 // rateLimitService
 		billingCacheSvc,                     // billingCacheService
-		nil,         // httpUpstream
-		&service.DeferredService{}, // deferredService
-		nil,         // openAITokenProvider
-		nil,         // resolver
-		nil,         // channelService
-		nil,         // balanceNotifyService
-		nil,         // settingService
-		nil,         // accountService
+		nil,                                 // httpUpstream
+		&service.DeferredService{},          // deferredService
+		nil,                                 // openAITokenProvider
+		nil,                                 // resolver
+		nil,                                 // channelService
+		nil,                                 // balanceNotifyService
+		nil,                                 // settingService
+		nil,                                 // accountService
 	)
 
 	cache := &concurrencyCacheMock{
@@ -479,9 +479,9 @@ func TestP2Characterization_OpenAIResponsesWSTurn2ModerationCloseError(t *testin
 	}
 }
 
-// openAIWSUsageHandlerAccountRepoStub 仅实现 GetByID 返回预设账号；其余方法经
-// 内嵌 nil AccountRepository 接口在意外调用时 panic（特征化测试纪律：不掩饰
-// 未预期的 service 调用，直接 fail）。
+// openAIWSUsageHandlerAccountRepoStub 仅实现 WS 调度路径需要的最小账号查询。
+// 其余方法经内嵌 nil AccountRepository 接口在意外调用时 panic（特征化测试纪律：
+// 不掩饰未预期的 service 调用，直接 fail）。
 type openAIWSUsageHandlerAccountRepoStub struct {
 	service.AccountRepository
 	account service.Account
@@ -489,6 +489,20 @@ type openAIWSUsageHandlerAccountRepoStub struct {
 
 func (r *openAIWSUsageHandlerAccountRepoStub) GetByID(_ context.Context, _ int64) (*service.Account, error) {
 	return &r.account, nil
+}
+
+func (r *openAIWSUsageHandlerAccountRepoStub) ListSchedulableByPlatform(_ context.Context, platform string) ([]service.Account, error) {
+	if r.account.Platform != "" && r.account.Platform != platform {
+		return nil, nil
+	}
+	return []service.Account{r.account}, nil
+}
+
+func (r *openAIWSUsageHandlerAccountRepoStub) ListSchedulableByGroupIDAndPlatform(_ context.Context, _ int64, platform string) ([]service.Account, error) {
+	if r.account.Platform != "" && r.account.Platform != platform {
+		return nil, nil
+	}
+	return []service.Account{r.account}, nil
 }
 
 // openAIWSUsageHandlerUsageLogRepoStub 仅实现 Create 将日志发入 channel 供测试

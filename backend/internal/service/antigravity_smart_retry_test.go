@@ -5,8 +5,8 @@ package service
 import (
 	"bytes"
 	"context"
-	"ikik-api/internal/pkg/tlsfingerprint"
 	"github.com/stretchr/testify/require"
+	"ikik-api/internal/pkg/tlsfingerprint"
 	"io"
 	"net/http"
 	"strings"
@@ -1104,10 +1104,9 @@ func TestHandleSmartRetry_ShortDelay_StickySession_SuccessRetry_NoDeleteSession(
 	require.Len(t, cache.deleteCalls, 0, "should NOT call DeleteSessionAccountID on successful retry")
 }
 
-// TestHandleSmartRetry_LongDelay_StickySession_NoDeleteInHandleSmartRetry
-// 长延迟路径（情况1）在 handleSmartRetry 中不直接调用 DeleteSessionAccountID
-// （清除由 handler 层的 shouldClearStickySession 在下次请求时处理）
-func TestHandleSmartRetry_LongDelay_StickySession_NoDeleteInHandleSmartRetry(t *testing.T) {
+// TestHandleSmartRetry_LongDelay_StickySession_ClearsSession
+// 长延迟路径（情况1）设置模型限流并切换账号时，应同步清除粘性绑定。
+func TestHandleSmartRetry_LongDelay_StickySession_ClearsSession(t *testing.T) {
 	repo := &stubAntigravityAccountRepo{}
 	cache := &stubSmartRetryCache{}
 	account := &Account{
@@ -1159,10 +1158,9 @@ func TestHandleSmartRetry_LongDelay_StickySession_NoDeleteInHandleSmartRetry(t *
 	require.NotNil(t, result.switchError)
 	require.True(t, result.switchError.IsStickySession)
 
-	// 长延迟路径不在 handleSmartRetry 中调用 DeleteSessionAccountID
-	// （由上游 handler 的 shouldClearStickySession 处理）
-	require.Len(t, cache.deleteCalls, 0,
-		"long delay path should NOT call DeleteSessionAccountID in handleSmartRetry (handled by handler layer)")
+	require.Len(t, cache.deleteCalls, 1, "long delay path should clear sticky session")
+	require.Equal(t, int64(42), cache.deleteCalls[0].groupID)
+	require.Equal(t, "sticky-hash-long-delay", cache.deleteCalls[0].sessionHash)
 }
 
 // TestHandleSmartRetry_ShortDelay_NetworkError_StickySession_ClearsSession

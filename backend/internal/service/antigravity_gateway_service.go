@@ -22,6 +22,7 @@ import (
 
 	"ikik-api/internal/pkg/antigravity"
 	"ikik-api/internal/pkg/logger"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
@@ -233,6 +234,9 @@ func (s *AntigravityGatewayService) handleSmartRetry(p antigravityRetryLoopParam
 			logger.LegacyPrintf("service.antigravity_gateway", "%s status=%d rate_limited account=%d (no model mapping)", p.prefix, resp.StatusCode, p.account.ID)
 		} else {
 			s.updateAccountModelRateLimitInCache(p.ctx, p.account, modelName, resetAt)
+		}
+		if s.cache != nil && p.sessionHash != "" {
+			_ = s.cache.DeleteSessionAccountID(p.ctx, p.groupID, p.sessionHash)
 		}
 
 		// 返回账号切换信号，让上层切换账号重试
@@ -2082,6 +2086,20 @@ func stripSignatureSensitiveBlocksFromClaudeRequest(req *antigravity.ClaudeReque
 	return changed, nil
 }
 
+type forwardGeminiOptions struct {
+	sessionGroupID int64
+	sessionKey     string
+}
+
+type ForwardGeminiOption func(*forwardGeminiOptions)
+
+func WithForwardGeminiSession(groupID int64, sessionKey string) ForwardGeminiOption {
+	return func(opts *forwardGeminiOptions) {
+		opts.sessionGroupID = groupID
+		opts.sessionKey = strings.TrimSpace(sessionKey)
+	}
+}
+
 // ForwardGemini 转发 Gemini 协议请求
 //
 // 限流处理流程:
@@ -2093,8 +2111,14 @@ func stripSignatureSensitiveBlocksFromClaudeRequest(req *antigravity.ClaudeReque
 //	      └─ retryDelay <  7s → 等待后重试 1 次
 //	          ├─ 成功 → 正常返回
 //	          └─ 失败 → 设置模型限流 + 清除粘性绑定 → 切换账号
-func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Context, account *Account, originalModel string, action string, stream bool, body []byte, isStickySession bool) (*ForwardResult, error) {
+func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Context, account *Account, originalModel string, action string, stream bool, body []byte, isStickySession bool, options ...ForwardGeminiOption) (*ForwardResult, error) {
 	startTime := time.Now()
+	opts := forwardGeminiOptions{}
+	for _, option := range options {
+		if option != nil {
+			option(&opts)
+		}
+	}
 
 	sessionID := getSessionID(c)
 	prefix := logPrefix(sessionID, account.Name)
@@ -2197,8 +2221,8 @@ func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Co
 		handleError:     s.handleUpstreamError,
 		requestedModel:  originalModel,
 		isStickySession: isStickySession, // ForwardGemini 由上层判断粘性会话
-		groupID:         0,               // ForwardGemini 方法没有 groupID，由上层处理粘性会话清除
-		sessionHash:     "",              // ForwardGemini 方法没有 sessionHash，由上层处理粘性会话清除
+		groupID:         opts.sessionGroupID,
+		sessionHash:     opts.sessionKey,
 	})
 	if err != nil {
 		// 检查是否是账号切换信号，转换为 UpstreamFailoverError 让 Handler 切换账号

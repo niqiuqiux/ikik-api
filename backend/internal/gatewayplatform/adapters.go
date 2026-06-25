@@ -85,5 +85,6 @@ func (p *GeminiProvider) Forward(ctx context.Context, c *gin.Context, account *s
 		req.Parsed.Stream,
 		req.Body,
 		req.IsStickySession,
+		service.WithForwardGeminiSession(req.SessionGroupID, req.SessionKey),
 	)
 }

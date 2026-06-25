@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	dbent "ikik-api/ent"
+	entuser "ikik-api/ent/user"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -78,23 +80,15 @@ ON CONFLICT (user_id, provider_type, grant_reason) DO NOTHING`,
 	}
 
 	if providerDefaults.Balance != 0 {
-		var balanceResult entsql.Result
-		if err := client.Driver().Exec(
-			ctx,
-			`UPDATE users
-SET balance = balance + $1::numeric,
-	recharge_balance = recharge_balance + $1::numeric,
-	total_recharged = total_recharged + $1::numeric,
-	updated_at = NOW()
-WHERE id = $2 AND deleted_at IS NULL`,
-			[]any{providerDefaults.Balance, userID},
-			&balanceResult,
-		); err != nil {
-			return fmt.Errorf("apply first bind balance default: %w", err)
-		}
-		affected, err := balanceResult.RowsAffected()
+		affected, err := client.User.Update().
+			Where(entuser.ID(userID), entuser.DeletedAtIsNil()).
+			AddBalance(providerDefaults.Balance).
+			AddRechargeBalance(providerDefaults.Balance).
+			AddTotalRecharged(providerDefaults.Balance).
+			SetUpdatedAt(time.Now()).
+			Save(ctx)
 		if err != nil {
-			return fmt.Errorf("read first bind balance default result: %w", err)
+			return fmt.Errorf("apply first bind balance default: %w", err)
 		}
 		if affected == 0 {
 			return ErrUserNotFound

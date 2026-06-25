@@ -69,6 +69,7 @@ func billInvNewGatewayService(
 	}
 	svc := NewGatewayService(
 		accountRepo,
+		nil, // accountSharePolicyRepo
 		nil, // groupRepo
 		usageRepo,
 		billingRepo,
@@ -94,7 +95,6 @@ func billInvNewGatewayService(
 		nil, // channelService
 		nil, // resolver
 		nil, // balanceNotifyService
-		nil, // userPlatformQuotaRepo
 	)
 	return svc
 }

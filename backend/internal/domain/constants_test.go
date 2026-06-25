@@ -2,21 +2,21 @@ package domain
 
 import "testing"
 
-func TestDefaultAntigravityModelMapping_ExcludesImageCompatibilityAliases(t *testing.T) {
+func TestDefaultAntigravityModelMapping_IncludesImageCompatibilityAliases(t *testing.T) {
 	t.Parallel()
 
-	blocked := []string{
-		"gemini-2.5-flash-image",
-		"gemini-2.5-flash-image-preview",
-		"gemini-3.1-flash-image",
-		"gemini-3.1-flash-image-preview",
-		"gemini-3-pro-image",
-		"gemini-3-pro-image-preview",
+	expected := map[string]string{
+		"gemini-2.5-flash-image":         "gemini-2.5-flash-image",
+		"gemini-2.5-flash-image-preview": "gemini-2.5-flash-image",
+		"gemini-3.1-flash-image":         "gemini-3.1-flash-image",
+		"gemini-3.1-flash-image-preview": "gemini-3.1-flash-image",
+		"gemini-3-pro-image":             "gemini-3.1-flash-image",
+		"gemini-3-pro-image-preview":     "gemini-3.1-flash-image",
 	}
 
-	for _, model := range blocked {
-		if got, ok := DefaultAntigravityModelMapping[model]; ok {
-			t.Fatalf("did not expect image generation model %q in default mapping, got %q", model, got)
+	for model, want := range expected {
+		if got, ok := DefaultAntigravityModelMapping[model]; !ok || got != want {
+			t.Fatalf("expected image generation model %q to map to %q, got %q (present=%v)", model, want, got, ok)
 		}
 	}
 }

@@ -8,8 +8,7 @@
 //   - 余额模式：余额 <= 0 → ErrInsufficientBalance
 //   - 订阅模式：日/周/月用量达到分组限额 → ErrDaily/Weekly/MonthlyLimitExceeded；
 //     订阅过期或非 active → ErrSubscriptionInvalid
-//   - user×platform 配额：日限额耗尽 → ErrUserPlatformDailyQuotaExhausted（429）；
-//     订阅模式豁免该检查
+//   - 用户/分组 RPM：用户级或分组级 RPM 超限 → ErrUserRPMExceeded / ErrGroupRPMExceeded
 //   - 并发等待后二次检查：第一次放行后用量/余额变化，再次调用即拒绝
 //   - simple 运行模式跳过所有计费检查
 package service
@@ -28,9 +27,8 @@ import (
 type billInvBillingCacheStub struct {
 	BillingCache
 
-	balance    float64
-	sub        *SubscriptionCacheData
-	quotaEntry *UserPlatformQuotaCacheEntry
+	balance float64
+	sub     *SubscriptionCacheData
 }
 
 func (s *billInvBillingCacheStub) GetUserBalance(ctx context.Context, userID int64) (float64, error) {
@@ -41,44 +39,33 @@ func (s *billInvBillingCacheStub) GetSubscriptionCache(ctx context.Context, user
 	return s.sub, nil
 }
 
-func (s *billInvBillingCacheStub) GetUserPlatformQuotaCache(ctx context.Context, userID int64, platform string) (*UserPlatformQuotaCacheEntry, bool, error) {
-	if s.quotaEntry == nil {
-		return nil, false, nil
-	}
-	return s.quotaEntry, true, nil
+type billInvUserRPMCacheStub struct {
+	UserRPMCache
+
+	userGroupCount int
+	userCount      int
 }
 
-// billInvQuotaRepoStub 仅用于让 userPlatformQuotaRepo 非 nil（cache HIT 路径不
-// 会触达 DB），嵌入接口的其余方法不会被调用。
-type billInvQuotaRepoStub struct {
-	UserPlatformQuotaRepository
+func (s *billInvUserRPMCacheStub) IncrementUserGroupRPM(context.Context, int64, int64) (int, error) {
+	return s.userGroupCount, nil
 }
 
-func (s *billInvQuotaRepoStub) GetByUserPlatform(ctx context.Context, userID int64, platform string) (*UserPlatformQuotaRecord, error) {
-	return nil, nil
+func (s *billInvUserRPMCacheStub) IncrementUserRPM(context.Context, int64) (int, error) {
+	return s.userCount, nil
 }
 
-func billInvNewBillingCacheService(t *testing.T, cache BillingCache, cfg *config.Config) *BillingCacheService {
+func billInvNewBillingCacheService(t *testing.T, cache BillingCache, cfg *config.Config, rpmCache ...UserRPMCache) *BillingCacheService {
 	t.Helper()
 	if cfg == nil {
 		cfg = &config.Config{}
 	}
-	svc := NewBillingCacheService(cache, nil, nil, nil, nil, nil, cfg, &billInvQuotaRepoStub{})
+	var rpm UserRPMCache
+	if len(rpmCache) > 0 {
+		rpm = rpmCache[0]
+	}
+	svc := NewBillingCacheService(cache, nil, nil, nil, nil, rpm, nil, cfg)
 	t.Cleanup(svc.Stop)
 	return svc
-}
-
-// billInvQuotaEntryV1 构造当前窗口内的 SchemaV1 user×platform 配额缓存条目。
-func billInvQuotaEntryV1(dailyLimit, dailyUsage float64) *UserPlatformQuotaCacheEntry {
-	now := time.Now()
-	return &UserPlatformQuotaCacheEntry{
-		SchemaVersion:      UserPlatformQuotaCacheSchemaV1,
-		DailyLimitUSD:      &dailyLimit,
-		DailyUsageUSD:      dailyUsage,
-		DailyWindowStart:   &now,
-		WeeklyWindowStart:  &now,
-		MonthlyWindowStart: &now,
-	}
 }
 
 // TestBillingInvariant_PreflightBalanceEligibility 锁定余额模式 preflight 语义。
@@ -87,13 +74,13 @@ func TestBillingInvariant_PreflightBalanceEligibility(t *testing.T) {
 
 	t.Run("余额耗尽拒绝", func(t *testing.T) {
 		svc := billInvNewBillingCacheService(t, &billInvBillingCacheStub{balance: 0}, nil)
-		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil, "")
+		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil)
 		require.ErrorIs(t, err, ErrInsufficientBalance)
 	})
 
 	t.Run("余额为正放行", func(t *testing.T) {
 		svc := billInvNewBillingCacheService(t, &billInvBillingCacheStub{balance: 5.0}, nil)
-		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil, "")
+		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil)
 		require.NoError(t, err)
 	})
 
@@ -102,11 +89,11 @@ func TestBillingInvariant_PreflightBalanceEligibility(t *testing.T) {
 		svc := billInvNewBillingCacheService(t, cache, nil)
 
 		// 第一次检查（获取并发槽前）：余额尚存 → 放行
-		require.NoError(t, svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil, ""))
+		require.NoError(t, svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil))
 
 		// 等待期间其他请求把余额扣到 0 → 等待结束后的二次检查必须拒绝
 		cache.balance = 0
-		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil, "")
+		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil)
 		require.ErrorIs(t, err, ErrInsufficientBalance)
 	})
 }
@@ -165,7 +152,7 @@ func TestBillingInvariant_PreflightSubscriptionLimits(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := billInvNewBillingCacheService(t, &billInvBillingCacheStub{sub: tt.sub}, nil)
-			err := svc.CheckBillingEligibility(context.Background(), user, nil, group, subscription, "")
+			err := svc.CheckBillingEligibility(context.Background(), user, nil, group, subscription)
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -175,44 +162,45 @@ func TestBillingInvariant_PreflightSubscriptionLimits(t *testing.T) {
 	}
 }
 
-// TestBillingInvariant_PreflightUserPlatformQuota 锁定 user×platform 配额的
-// preflight 语义：余额模式下日限额耗尽 → 429 拒绝；订阅模式豁免该检查。
-func TestBillingInvariant_PreflightUserPlatformQuota(t *testing.T) {
+// TestBillingInvariant_PreflightRPM 锁定用户/分组 RPM 的 preflight 语义：
+// 分组 RPM 超限优先拒绝，未设置分组 RPM 时回落到用户 RPM。
+func TestBillingInvariant_PreflightRPM(t *testing.T) {
 	user := &User{ID: 601}
 
-	t.Run("日配额耗尽拒绝", func(t *testing.T) {
-		cache := &billInvBillingCacheStub{
-			balance:    5.0, // 余额充足，确保拒绝来自 platform quota
-			quotaEntry: billInvQuotaEntryV1(5.0, 5.0),
-		}
-		svc := billInvNewBillingCacheService(t, cache, nil)
-		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil, PlatformAnthropic)
-		require.ErrorIs(t, err, ErrUserPlatformDailyQuotaExhausted)
+	t.Run("分组RPM耗尽拒绝", func(t *testing.T) {
+		group := &Group{ID: 7, RPMLimit: 1}
+		svc := billInvNewBillingCacheService(
+			t,
+			&billInvBillingCacheStub{balance: 5.0},
+			nil,
+			&billInvUserRPMCacheStub{userGroupCount: 2},
+		)
+		err := svc.CheckBillingEligibility(context.Background(), user, nil, group, nil)
+		require.ErrorIs(t, err, ErrGroupRPMExceeded)
 	})
 
-	t.Run("日配额未满放行", func(t *testing.T) {
-		cache := &billInvBillingCacheStub{
-			balance:    5.0,
-			quotaEntry: billInvQuotaEntryV1(5.0, 4.99),
-		}
-		svc := billInvNewBillingCacheService(t, cache, nil)
-		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil, PlatformAnthropic)
+	t.Run("分组RPM未满放行", func(t *testing.T) {
+		group := &Group{ID: 7, RPMLimit: 5}
+		svc := billInvNewBillingCacheService(
+			t,
+			&billInvBillingCacheStub{balance: 5.0},
+			nil,
+			&billInvUserRPMCacheStub{userGroupCount: 5},
+		)
+		err := svc.CheckBillingEligibility(context.Background(), user, nil, group, nil)
 		require.NoError(t, err)
 	})
 
-	t.Run("订阅模式豁免platform配额检查", func(t *testing.T) {
-		group := &Group{
-			ID:               7,
-			SubscriptionType: SubscriptionTypeSubscription,
-			DailyLimitUSD:    billInvF64Ptr(10),
-		}
-		cache := &billInvBillingCacheStub{
-			sub:        &SubscriptionCacheData{Status: SubscriptionStatusActive, ExpiresAt: time.Now().Add(24 * time.Hour)},
-			quotaEntry: billInvQuotaEntryV1(5.0, 999), // platform 配额早已超限
-		}
-		svc := billInvNewBillingCacheService(t, cache, nil)
-		err := svc.CheckBillingEligibility(context.Background(), user, nil, group, &UserSubscription{ID: 42}, PlatformAnthropic)
-		require.NoError(t, err, "订阅模式下 user×platform 配额不应生效")
+	t.Run("用户RPM耗尽拒绝", func(t *testing.T) {
+		user := &User{ID: 601, RPMLimit: 1}
+		svc := billInvNewBillingCacheService(
+			t,
+			&billInvBillingCacheStub{balance: 5.0},
+			nil,
+			&billInvUserRPMCacheStub{userCount: 2},
+		)
+		err := svc.CheckBillingEligibility(context.Background(), user, nil, nil, nil)
+		require.ErrorIs(t, err, ErrUserRPMExceeded)
 	})
 }
 
@@ -221,6 +209,6 @@ func TestBillingInvariant_PreflightUserPlatformQuota(t *testing.T) {
 func TestBillingInvariant_PreflightSimpleModeBypass(t *testing.T) {
 	cfg := &config.Config{RunMode: config.RunModeSimple}
 	svc := billInvNewBillingCacheService(t, &billInvBillingCacheStub{balance: 0}, cfg)
-	err := svc.CheckBillingEligibility(context.Background(), &User{ID: 601}, nil, nil, nil, PlatformAnthropic)
+	err := svc.CheckBillingEligibility(context.Background(), &User{ID: 601}, nil, nil, nil)
 	require.NoError(t, err)
 }

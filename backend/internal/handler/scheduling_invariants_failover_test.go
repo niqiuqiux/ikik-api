@@ -326,6 +326,7 @@ func schedInvNewHandler(t *testing.T, group *service.Group, accounts []*service.
 
 	gwSvc := service.NewGatewayService(
 		nil, // accountRepo（scheduler snapshot 命中，不需要）
+		nil, // accountSharePolicyRepo
 		&fakeGroupRepo{group: group},
 		nil, nil, nil, nil, nil, // usageLogRepo / usageBillingRepo / userRepo / userSubRepo / userGroupRateRepo
 		nil, // cache（粘性会话关闭）
@@ -339,12 +340,15 @@ func schedInvNewHandler(t *testing.T, group *service.Group, accounts []*service.
 		nil,                         // billingCacheService
 		nil,                         // identityService
 		upstream,
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+		nil,                // deferredService
+		nil, nil, nil, nil, // claudeTokenProvider / sessionLimitCache / rpmCache / digestStore
+		nil,                // settingService
+		nil, nil, nil, nil, // tlsFPProfileService / channelService / resolver / balanceNotifyService
 	)
 
 	// RunModeSimple 跳过计费检查，避免引入 repo/cache 依赖。
-	billingCacheSvc := service.NewBillingCacheService(nil, nil, nil, nil, nil, nil,
-		&config.Config{RunMode: config.RunModeSimple}, nil)
+	billingCacheSvc := service.NewBillingCacheService(nil, nil, nil, nil, nil, nil, nil,
+		&config.Config{RunMode: config.RunModeSimple})
 
 	h := NewGatewayHandler(
 		gwSvc,

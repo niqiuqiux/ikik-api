@@ -9,12 +9,12 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"ikik-api/internal/pkg/logger"
-	"ikik-api/internal/pkg/openai"
-	openaiwsv2 "ikik-api/internal/service/openai_ws_v2"
 	coderws "github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
+	"ikik-api/internal/pkg/logger"
+	"ikik-api/internal/pkg/openai"
+	openaiwsv2 "ikik-api/internal/service/openai_ws_v2"
 )
 
 type openAIWSClientFrameConn struct {
@@ -22,9 +22,9 @@ type openAIWSClientFrameConn struct {
 }
 
 // openAIWSPolicyEnforcingFrameConn wraps a client-side FrameConn and runs
-// every client→upstream frame through the OpenAI Fast Policy. It is the
-// passthrough-relay equivalent of the parseClientPayload integration in the
-// ingress session path. filter returns:
+// every client→upstream frame through the same per-frame gates used by the
+// non-passthrough ingress path. It is the passthrough-relay equivalent of the
+// parseClientPayload integration in the ingress session path. filter returns:
 //   - newPayload, nil, nil: forward the (possibly mutated) payload
 //   - _, *OpenAIFastBlockedError, nil: block — the wrapper sends an error
 //     event via onBlock and surfaces a transport-level error so the relay
@@ -335,6 +335,14 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 			model := openAIWSPassthroughPolicyModelForFrame(account, payload)
 			if model == "" {
 				model = capturedSessionModel
+			}
+			if strings.TrimSpace(gjson.GetBytes(payload, "type").String()) == "response.create" && hooks != nil && hooks.BeforeRequest != nil {
+				turn := int(completedTurns.Load()) + 1
+				if turn > 1 {
+					if err := hooks.BeforeRequest(turn, payload, model); err != nil {
+						return payload, nil, err
+					}
+				}
 			}
 			out, blocked, policyErr := s.applyOpenAIFastPolicyToWSResponseCreate(ctx, account, model, payload)
 			// 多轮 passthrough billing：仅在成功（non-block / non-err）

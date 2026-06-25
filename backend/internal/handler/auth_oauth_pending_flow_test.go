@@ -11,6 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/pquerna/otp/totp"
+	"github.com/stretchr/testify/require"
 	dbent "ikik-api/ent"
 	"ikik-api/ent/authidentity"
 	"ikik-api/ent/enttest"
@@ -21,9 +24,6 @@ import (
 	"ikik-api/internal/config"
 	"ikik-api/internal/pkg/pagination"
 	"ikik-api/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/pquerna/otp/totp"
-	"github.com/stretchr/testify/require"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -1865,7 +1865,7 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 17.5, storedUser.Balance)
 	require.Equal(t, 5, storedUser.Concurrency)
-	require.Zero(t, storedUser.TotalRecharged)
+	require.Equal(t, 12.5, storedUser.TotalRecharged)
 	require.Len(t, defaultSubAssigner.calls, 1)
 	require.Equal(t, int64(existingUser.ID), defaultSubAssigner.calls[0].UserID)
 	require.Equal(t, int64(101), defaultSubAssigner.calls[0].GroupID)
@@ -1907,7 +1907,7 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 17.5, storedUser.Balance)
 	require.Equal(t, 5, storedUser.Concurrency)
-	require.Zero(t, storedUser.TotalRecharged)
+	require.Equal(t, 12.5, storedUser.TotalRecharged)
 	require.Len(t, defaultSubAssigner.calls, 1)
 	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "oidc", "first_bind"))
 }

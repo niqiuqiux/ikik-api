@@ -226,20 +226,19 @@ func TestBillingInvariant_ServiceTierThenRateMultiplier(t *testing.T) {
 		},
 		{
 			// gpt-5.4 有显式 priority 价：in $5/MTok, out $30/MTok, cache_read $0.5/MTok。
-			// 注意（characterization）：cache_write 无 priority 价，且显式 priority 价
-			// 生效时 tierMultiplier 固定 1.0，因此 cache_write 仍按基础价 $2.5/MTok
-			// 计费、不做 2 倍上浮——与下方"无显式价回退 2 倍"的行为不同。
+			// 注意（characterization）：cache_write 无 priority 显式价，因此该分项
+			// 回退到 priority tier multiplier 2 倍。
 			name:           "priority显式价后再乘rateMultiplier",
 			model:          "gpt-5.4",
 			serviceTier:    "priority",
 			rateMultiplier: 2.0,
 			tokens:         UsageTokens{InputTokens: 1000, OutputTokens: 500, CacheCreationTokens: 1000, CacheReadTokens: 2000},
-			wantInput:      0.005,  // 1000 × 5e-6（priority 价）
-			wantOutput:     0.015,  // 500 × 30e-6（priority 价）
-			wantCacheWrite: 0.0025, // 1000 × 2.5e-6（基础价，无 priority 上浮）
-			wantCacheRead:  0.001,  // 2000 × 0.5e-6（priority 价）
-			wantTotal:      0.0235,
-			wantActual:     0.047, // 0.0235 × 2.0
+			wantInput:      0.005, // 1000 × 5e-6（priority 价）
+			wantOutput:     0.015, // 500 × 30e-6（priority 价）
+			wantCacheWrite: 0.005, // 1000 × 2.5e-6 × 2（无 priority 显式价，回退 2 倍）
+			wantCacheRead:  0.001, // 2000 × 0.5e-6（priority 价）
+			wantTotal:      0.026,
+			wantActual:     0.052, // 0.026 × 2.0
 		},
 		{
 			// claude-sonnet-4 fallback 无 priority 显式价 → 回退 2.0 倍 tier multiplier，

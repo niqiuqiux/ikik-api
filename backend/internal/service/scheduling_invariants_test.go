@@ -51,6 +51,7 @@ type schedInvSetCall struct {
 type schedInvGatewayCache struct {
 	mu           sync.Mutex
 	bindings     map[string]int64
+	strings      map[string]string
 	setCalls     []schedInvSetCall
 	refreshCalls []schedInvSetCall
 	deleteCalls  []string
@@ -59,7 +60,10 @@ type schedInvGatewayCache struct {
 var _ GatewayCache = (*schedInvGatewayCache)(nil)
 
 func schedInvNewGatewayCache() *schedInvGatewayCache {
-	return &schedInvGatewayCache{bindings: make(map[string]int64)}
+	return &schedInvGatewayCache{
+		bindings: make(map[string]int64),
+		strings:  make(map[string]string),
+	}
 }
 
 func schedInvCacheKey(groupID int64, hash string) string {
@@ -98,6 +102,29 @@ func (c *schedInvGatewayCache) DeleteSessionAccountID(_ context.Context, groupID
 	return nil
 }
 
+func (c *schedInvGatewayCache) GetSessionString(_ context.Context, groupID int64, sessionHash string) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if value, ok := c.strings[schedInvCacheKey(groupID, sessionHash)]; ok {
+		return value, nil
+	}
+	return "", errors.New("schedInv: session string not found")
+}
+
+func (c *schedInvGatewayCache) SetSessionString(_ context.Context, groupID int64, sessionHash string, value string, _ time.Duration) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.strings[schedInvCacheKey(groupID, sessionHash)] = value
+	return nil
+}
+
+func (c *schedInvGatewayCache) DeleteSessionString(_ context.Context, groupID int64, sessionHash string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.strings, schedInvCacheKey(groupID, sessionHash))
+	return nil
+}
+
 func (c *schedInvGatewayCache) binding(groupID int64, hash string) int64 {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -129,6 +156,18 @@ func (c *schedInvRedisGatewayCache) RefreshSessionTTL(ctx context.Context, group
 }
 
 func (c *schedInvRedisGatewayCache) DeleteSessionAccountID(ctx context.Context, groupID int64, sessionHash string) error {
+	return c.rdb.Del(ctx, c.key(groupID, sessionHash)).Err()
+}
+
+func (c *schedInvRedisGatewayCache) GetSessionString(ctx context.Context, groupID int64, sessionHash string) (string, error) {
+	return c.rdb.Get(ctx, c.key(groupID, sessionHash)).Result()
+}
+
+func (c *schedInvRedisGatewayCache) SetSessionString(ctx context.Context, groupID int64, sessionHash string, value string, ttl time.Duration) error {
+	return c.rdb.Set(ctx, c.key(groupID, sessionHash), value, ttl).Err()
+}
+
+func (c *schedInvRedisGatewayCache) DeleteSessionString(ctx context.Context, groupID int64, sessionHash string) error {
 	return c.rdb.Del(ctx, c.key(groupID, sessionHash)).Err()
 }
 

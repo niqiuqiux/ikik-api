@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"ikik-api/internal/config"
 	"ikik-api/internal/pkg/pagination"
-	"github.com/stretchr/testify/require"
 )
 
 type redeemCodeRepoStub struct {
@@ -256,7 +256,7 @@ func TestRegisterOAuthEmailAccountFallsBackUnknownSignupSourceToEmail(t *testing
 		"secret-123",
 		"246810",
 		"",
-		"github",
+		"unknown-provider",
 	)
 
 	require.NoError(t, err)

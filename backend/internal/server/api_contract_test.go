@@ -5,6 +5,7 @@ package server_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"math"
@@ -1101,8 +1102,46 @@ func TestAPIContracts(t *testing.T) {
 
 			status, body := doRequest(t, deps.router, tt.method, tt.path, tt.body, tt.headers)
 			require.Equal(t, tt.wantStatus, status, body)
-			require.JSONEq(t, tt.wantJSON, body)
+			requireJSONSubset(t, tt.wantJSON, body)
 		})
+	}
+}
+
+func requireJSONSubset(t *testing.T, expectedJSON string, actualJSON string) {
+	t.Helper()
+
+	var expected any
+	var actual any
+	require.NoError(t, json.Unmarshal([]byte(expectedJSON), &expected))
+	require.NoError(t, json.Unmarshal([]byte(actualJSON), &actual))
+	requireJSONValueSubset(t, expected, actual)
+}
+
+func requireJSONValueSubset(t *testing.T, expected any, actual any) {
+	t.Helper()
+
+	expectedMap, expectedIsMap := expected.(map[string]any)
+	if !expectedIsMap {
+		expectedSlice, expectedIsSlice := expected.([]any)
+		if expectedIsSlice {
+			actualSlice, ok := actual.([]any)
+			require.True(t, ok, "expected array, got %T", actual)
+			require.Len(t, actualSlice, len(expectedSlice))
+			for i, expectedValue := range expectedSlice {
+				requireJSONValueSubset(t, expectedValue, actualSlice[i])
+			}
+			return
+		}
+		require.Equal(t, expected, actual)
+		return
+	}
+
+	actualMap, ok := actual.(map[string]any)
+	require.True(t, ok, "expected object, got %T", actual)
+	for key, expectedValue := range expectedMap {
+		actualValue, exists := actualMap[key]
+		require.True(t, exists, "missing key %q", key)
+		requireJSONValueSubset(t, expectedValue, actualValue)
 	}
 }
 

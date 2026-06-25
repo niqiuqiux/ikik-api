@@ -202,6 +202,14 @@ func (c *p3CharStickyCache) recordedGetCalls() []p3CharSessionCall {
 	return append([]p3CharSessionCall(nil), c.getCalls...)
 }
 
+type p3CharAccountRepo struct {
+	service.AccountRepository
+}
+
+func (r *p3CharAccountRepo) SetModelRateLimit(context.Context, int64, string, time.Time) error {
+	return nil
+}
+
 // p3CharGroup 构造指定平台的测试分组。
 func p3CharGroup(groupID int64, platform string) *service.Group {
 	return &service.Group{
@@ -278,7 +286,7 @@ func p3CharNewHandler(t *testing.T, group *service.Group, accounts []*service.Ac
 	)
 
 	agSvc := service.NewAntigravityGatewayService(
-		nil, // accountRepo（模型限流写库不在锁定面，nil → 仅走 handleError 兜底分支）
+		&p3CharAccountRepo{}, // accountRepo（模型限流写库不在锁定面，仅避免测试夹具 nil panic）
 		stickyCache,
 		schedulerSnapshot,
 		&service.AntigravityTokenProvider{},
@@ -288,8 +296,8 @@ func p3CharNewHandler(t *testing.T, group *service.Group, accounts []*service.Ac
 		nil, // internal500Cache
 	)
 
-	billingCacheSvc := service.NewBillingCacheService(nil, nil, nil, nil, nil, nil,
-		&config.Config{RunMode: config.RunModeSimple}, nil)
+	billingCacheSvc := service.NewBillingCacheService(nil, nil, nil, nil, nil, nil, nil,
+		&config.Config{RunMode: config.RunModeSimple})
 
 	h := NewGatewayHandler(
 		gwSvc,
