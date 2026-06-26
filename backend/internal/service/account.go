@@ -18,23 +18,23 @@ import (
 )
 
 type Account struct {
-	ID            int64
-	Name          string
-	Notes         *string
-	Platform      string
-	AccountLevel  string
-	Type          string
-	Credentials   map[string]any
-	Extra         map[string]any
-	OwnerUserID   *int64
-	ShareMode     string
-	ShareStatus   string
-	SharePolicyID *int64
-	ProxyID       *int64
+	ID                    int64
+	Name                  string
+	Notes                 *string
+	Platform              string
+	AccountLevel          string
+	Type                  string
+	Credentials           map[string]any
+	Extra                 map[string]any
+	OwnerUserID           *int64
+	ShareMode             string
+	ShareStatus           string
+	SharePolicyID         *int64
+	ProxyID               *int64
 	ProxyFallbackOriginID *int64
 	ProxyFallbackOrigin   *Proxy
-	Concurrency   int
-	Priority      int
+	Concurrency           int
+	Priority              int
 	// RateMultiplier 账号计费倍率（>=0，允许 0 表示该账号计费为 0）。
 	// 使用指针用于兼容旧版本调度缓存（Redis）中缺字段的情况：nil 表示按 1.0 处理。
 	RateMultiplier     *float64
@@ -81,7 +81,10 @@ const (
 	OpenAIEndpointCapabilityEmbeddings      OpenAIEndpointCapability = "embeddings"
 )
 
-const openAIEndpointCapabilitiesCredentialKey = "openai_capabilities"
+const (
+	openAIEndpointCapabilitiesCredentialKey       = "openai_capabilities"
+	legacyOpenAIEndpointCapabilitiesCredentialKey = "endpoint_capabilities"
+)
 
 const (
 	AccountShareModePrivate = "private"
@@ -1419,11 +1422,17 @@ func (a *Account) openAIEndpointCapabilitySet() (map[string]bool, bool) {
 	if a == nil || a.Credentials == nil {
 		return nil, false
 	}
-	raw, found := a.Credentials[openAIEndpointCapabilitiesCredentialKey]
-	if !found || raw == nil {
-		return nil, false
+	for _, key := range []string{openAIEndpointCapabilitiesCredentialKey, legacyOpenAIEndpointCapabilitiesCredentialKey} {
+		raw, found := a.Credentials[key]
+		if !found || raw == nil {
+			continue
+		}
+		return parseOpenAIEndpointCapabilitySet(raw), true
 	}
+	return nil, false
+}
 
+func parseOpenAIEndpointCapabilitySet(raw any) map[string]bool {
 	result := make(map[string]bool)
 	add := func(value string) {
 		value = strings.ToLower(strings.TrimSpace(value))
@@ -1444,6 +1453,10 @@ func (a *Account) openAIEndpointCapabilitySet() (map[string]bool, bool) {
 		for _, value := range capabilities {
 			add(value)
 		}
+	case string:
+		for _, value := range strings.Split(capabilities, ",") {
+			add(value)
+		}
 	case map[string]any:
 		for key, value := range capabilities {
 			if enabled, ok := value.(bool); ok && enabled {
@@ -1458,7 +1471,7 @@ func (a *Account) openAIEndpointCapabilitySet() (map[string]bool, bool) {
 		}
 	}
 
-	return result, true
+	return result
 }
 
 func (a *Account) SupportsOpenAIImageCapability(capability OpenAIImagesCapability) bool {
