@@ -211,6 +211,11 @@ routeLoop:
 					if routeCursor.switchToNext(apiKey.ID, "account_select_failed", reqLog, zap.Error(err)) {
 						continue routeLoop
 					}
+					cls := classifyNoAccountErrorFromGin(c, h.gatewayService, currentAPIKey, reqModel, requestedModel, service.PlatformOpenAI)
+					if cls.ModelNotFound {
+						h.responsesErrorResponse(c, cls.Status, cls.ErrType, cls.Message)
+						return
+					}
 					h.responsesErrorResponse(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error())
 					return
 				}

@@ -248,7 +248,7 @@
       <template #table>
         <DataTable
           :columns="columns"
-          :data="users"
+          :data="sortedUsers"
           :loading="loading"
           :actions-count="7"
           :server-side-sort="true"
@@ -257,6 +257,48 @@
           :sort-storage-key="USER_SORT_STORAGE_KEY"
           @sort="handleSort"
         >
+          <template #header-usage="{ column }">
+            <div class="flex items-center gap-1.5">
+              <span>{{ column.label }}</span>
+              <div class="usage-sort-trigger relative normal-case tracking-normal">
+                <button
+                  type="button"
+                  class="inline-flex h-7 items-center gap-1 rounded-md border border-gray-200 bg-white px-2 text-[11px] font-medium text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 dark:border-dark-600 dark:bg-dark-800 dark:text-dark-300 dark:hover:border-dark-500 dark:hover:bg-dark-700 dark:hover:text-white"
+                  :class="usageSort ? 'border-primary-200 text-primary-700 dark:border-primary-700/60 dark:text-primary-300' : ''"
+                  :title="t('admin.users.sortBy')"
+                  @click.stop="toggleUsageSortMenu"
+                >
+                  <span v-if="usageSort">
+                    {{ usageSort.metric === 'today' ? t('admin.users.today') : t('admin.users.total') }}
+                  </span>
+                  <Icon name="chevronDown" size="xs" class="h-3.5 w-3.5" />
+                </button>
+                <div
+                  v-if="showUsageSortMenu"
+                  class="absolute right-0 top-full z-50 mt-1.5 w-36 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 text-xs normal-case tracking-normal shadow-xl dark:border-dark-600 dark:bg-dark-700"
+                  @click.stop
+                >
+                  <button
+                    v-for="metric in usageSortMetrics"
+                    :key="metric"
+                    type="button"
+                    class="flex w-full items-center justify-between px-3 py-2 text-left text-gray-700 transition-colors hover:bg-primary-50 hover:text-primary-700 dark:text-dark-200 dark:hover:bg-primary-900/30 dark:hover:text-primary-300"
+                    :class="isUsageSortActive(metric) ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : ''"
+                    @click="toggleUsageSort(metric)"
+                  >
+                    <span>{{ metric === 'today' ? t('admin.users.today') : t('admin.users.total') }}</span>
+                    <Icon
+                      v-if="isUsageSortActive(metric)"
+                      :name="getUsageSortOrder(metric) === 'asc' ? 'arrowUp' : 'arrowDown'"
+                      size="xs"
+                      class="h-3.5 w-3.5"
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+
           <template #cell-email="{ value }">
             <div class="flex items-center gap-2">
               <div
@@ -1038,6 +1080,97 @@ const getAttributeDefinition = (attrId: number): UserAttributeDefinition | undef
   return attributeDefinitions.value.find(d => d.id === attrId)
 }
 const usageStats = ref<Record<string, BatchUserUsageStats>>({})
+type UsageMetric = 'today' | 'total'
+type UsageSortState = {
+  metric: UsageMetric
+  order: 'asc' | 'desc'
+} | null
+
+const usageSortMetrics: UsageMetric[] = ['today', 'total']
+const USAGE_SORT_STORAGE_KEY = 'admin-users-usage-sort'
+const showUsageSortMenu = ref(false)
+
+const loadInitialUsageSort = (): UsageSortState => {
+  try {
+    const raw = localStorage.getItem(USAGE_SORT_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { metric?: string; order?: string }
+    const metric = usageSortMetrics.includes(parsed.metric as UsageMetric)
+      ? parsed.metric as UsageMetric
+      : null
+    if (!metric) return null
+    return {
+      metric,
+      order: parsed.order === 'asc' ? 'asc' : 'desc'
+    }
+  } catch {
+    return null
+  }
+}
+
+const usageSort = ref<UsageSortState>(loadInitialUsageSort())
+
+const persistUsageSort = () => {
+  try {
+    if (!usageSort.value) {
+      localStorage.removeItem(USAGE_SORT_STORAGE_KEY)
+      return
+    }
+    localStorage.setItem(USAGE_SORT_STORAGE_KEY, JSON.stringify(usageSort.value))
+  } catch (e) {
+    console.error('Failed to persist usage sort:', e)
+  }
+}
+
+const clearUsageSort = () => {
+  usageSort.value = null
+  showUsageSortMenu.value = false
+  persistUsageSort()
+}
+
+const toggleUsageSortMenu = () => {
+  showUsageSortMenu.value = !showUsageSortMenu.value
+}
+
+const isUsageSortActive = (metric: UsageMetric) => usageSort.value?.metric === metric
+const getUsageSortOrder = (metric: UsageMetric) =>
+  usageSort.value?.metric === metric ? usageSort.value.order : 'desc'
+
+const toggleUsageSort = (metric: UsageMetric) => {
+  if (usageSort.value?.metric === metric) {
+    usageSort.value = {
+      metric,
+      order: usageSort.value.order === 'desc' ? 'asc' : 'desc'
+    }
+  } else {
+    usageSort.value = { metric, order: 'desc' }
+  }
+  showUsageSortMenu.value = false
+  persistUsageSort()
+}
+
+const getUsageValue = (userId: number, metric: UsageMetric) => {
+  const stat = usageStats.value[userId]
+  if (!stat) return 0
+  return metric === 'today'
+    ? stat.today_actual_cost ?? 0
+    : stat.total_actual_cost ?? 0
+}
+
+const sortedUsers = computed(() => {
+  const activeUsageSort = usageSort.value
+  if (!activeUsageSort) return users.value
+
+  return users.value
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => {
+      const aValue = getUsageValue(a.row.id, activeUsageSort.metric)
+      const bValue = getUsageValue(b.row.id, activeUsageSort.metric)
+      if (aValue === bValue) return a.index - b.index
+      return activeUsageSort.order === 'desc' ? bValue - aValue : aValue - bValue
+    })
+    .map(({ row }) => row)
+})
 // User attribute definitions and values
 const attributeDefinitions = ref<UserAttributeDefinition[]>([])
 const userAttributeValues = ref<Record<number, Record<number, string>>>({})
@@ -1192,6 +1325,9 @@ const handleClickOutside = (event: MouseEvent) => {
   if (expandedGroupUserId.value !== null) {
     expandedGroupUserId.value = null
   }
+  if (showUsageSortMenu.value && !target.closest('.usage-sort-trigger')) {
+    showUsageSortMenu.value = false
+  }
 }
 
 // Allowed groups modal state
@@ -1333,6 +1469,7 @@ const handlePageSizeChange = (pageSize: number) => {
 }
 
 const handleSort = (key: string, order: 'asc' | 'desc') => {
+  clearUsageSort()
   sortState.sort_by = key
   sortState.sort_order = order
   pagination.page = 1

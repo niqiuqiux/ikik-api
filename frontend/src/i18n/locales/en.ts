@@ -2994,6 +2994,7 @@ export default {
       },
       today: 'Today',
       total: 'Last 30d',
+      sortBy: 'Sort by',
       noSubscription: 'No subscription',
       publicGroupCount: '+{count} public',
       exclusiveLabel: 'exclusive',

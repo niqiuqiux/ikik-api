@@ -3011,6 +3011,7 @@ export default {
       },
       today: '今日',
       total: '近30天',
+      sortBy: '排序方式',
       noSubscription: '暂无订阅',
       publicGroupCount: '+{count} 公开',
       exclusiveLabel: '专属',

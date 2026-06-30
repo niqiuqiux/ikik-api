@@ -340,6 +340,11 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "compact_not_supported", "No available OpenAI accounts support /responses/compact", streamStarted)
 					return
 				}
+				cls := classifyNoAccountErrorFromGin(c, h.gatewayService, currentAPIKey, reqModel, requestedModel, requestPlatform)
+				if cls.ModelNotFound {
+					h.handleStreamingAwareError(c, cls.Status, cls.ErrType, cls.Message, streamStarted)
+					return
+				}
 				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
 				return
 			}
@@ -810,6 +815,11 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 						switchCount = 0
 						lastFailoverErr = nil
 						continue
+					}
+					cls := classifyNoAccountErrorFromGin(c, h.gatewayService, currentAPIKey, currentRoutingModel, requestedModel, requestPlatform)
+					if cls.ModelNotFound {
+						h.anthropicStreamingAwareError(c, cls.Status, cls.ErrType, cls.Message, streamStarted)
+						return
 					}
 					h.anthropicStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
 					return

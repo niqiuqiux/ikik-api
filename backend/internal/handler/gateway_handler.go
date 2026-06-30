@@ -368,6 +368,11 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 						zap.String("platform", platform),
 						zap.Error(err),
 					)
+					cls := classifyNoAccountErrorFromGin(c, h.gatewayService, apiKey, reqModel, reqModel, platform)
+					if cls.ModelNotFound {
+						h.handleStreamingAwareError(c, cls.Status, cls.ErrType, cls.Message, streamStarted)
+						return
+					}
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
 					return
 				}
@@ -705,6 +710,11 @@ routeLoop:
 					)
 					if routeBackedRequest && routeCursor.switchToNext(apiKey.ID, "account_select_failed", reqLog, zap.Error(err)) {
 						continue routeLoop
+					}
+					cls := classifyNoAccountErrorFromGin(c, h.gatewayService, currentAPIKey, reqModel, requestedModel, platform)
+					if cls.ModelNotFound {
+						h.handleStreamingAwareError(c, cls.Status, cls.ErrType, cls.Message, streamStarted)
+						return
 					}
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
 					return

@@ -168,9 +168,9 @@
                 <!-- Price -->
                 <div class="flex items-baseline gap-2">
                   <span v-if="selectedPlan.original_price" class="text-sm text-[#a89a8d] line-through dark:text-[#8b7c70]">
-                    ¥{{ selectedPlan.original_price }}
+                    {{ formatSelectedSubscriptionPaymentAmount(selectedPlan.original_price) }}
                   </span>
-                  <span class="text-3xl font-semibold text-[#26211c] dark:text-[#f4efe7]">¥{{ selectedPlan.price }}</span>
+                  <span class="text-3xl font-semibold text-[#26211c] dark:text-[#f4efe7]">{{ formatSelectedSubscriptionPaymentAmount(selectedPlan.price) }}</span>
                   <span class="text-sm text-[#75685d] dark:text-[#b8aa9d]">/ {{ planValiditySuffix }}</span>
                 </div>
                 <!-- Description -->
@@ -218,15 +218,15 @@
                 <div class="space-y-2 text-sm">
                   <div class="flex justify-between">
                     <span class="text-[#75685d] dark:text-[#b8aa9d]">{{ t('payment.amountLabel') }}</span>
-                    <span class="text-[#26211c] dark:text-[#f4efe7]">¥{{ selectedPlan.price.toFixed(2) }}</span>
+                    <span class="text-[#26211c] dark:text-[#f4efe7]">{{ formatSelectedPaymentAmount(subPaymentAmount) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-[#75685d] dark:text-[#b8aa9d]">{{ t('payment.fee') }} ({{ feeRate }}%)</span>
-                    <span class="text-[#26211c] dark:text-[#f4efe7]">¥{{ subFeeAmount.toFixed(2) }}</span>
+                    <span class="text-[#26211c] dark:text-[#f4efe7]">{{ formatSelectedPaymentAmount(subFeeAmount) }}</span>
                   </div>
                   <div class="flex justify-between border-t border-[#eadfce] pt-2 dark:border-[#3a3028]">
                     <span class="font-medium text-[#3a3028] dark:text-[#efe5da]">{{ t('payment.actualPay') }}</span>
-                    <span class="text-lg font-semibold text-[#26211c] dark:text-[#f4efe7]">¥{{ subTotalAmount.toFixed(2) }}</span>
+                    <span class="text-lg font-semibold text-[#26211c] dark:text-[#f4efe7]">{{ formatSelectedPaymentAmount(subTotalAmount) }}</span>
                   </div>
                 </div>
               </div>
@@ -235,7 +235,7 @@
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
                   {{ t('common.processing') }}
                 </span>
-                <span v-else>{{ t('payment.createOrder') }} ¥{{ (feeRate > 0 ? subTotalAmount : selectedPlan.price).toFixed(2) }}</span>
+                <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(subTotalAmount) }}</span>
               </button>
               <button class="btn btn-secondary w-full" @click="selectedPlan = null">{{ t('common.cancel') }}</button>
             </template>
@@ -354,10 +354,11 @@ import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSelector.vue'
+import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import { buildPaymentErrorToastMessage, describePaymentScenarioError } from './paymentUx'
 import { hasWechatResumeQuery, parseWechatResumeRoute, stripWechatResumeQuery } from './paymentWechatResume'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -634,6 +635,42 @@ const rechargeAmountHint = computed(() => {
 
 // Selected method's limits (for validation and error messages)
 const selectedLimit = computed(() => visibleMethods.value[selectedMethod.value])
+const selectedCurrency = computed(() => normalizePaymentCurrency(selectedLimit.value?.currency))
+const localeCode = computed(() => {
+  const value = String(locale.value || '').trim()
+  return value || undefined
+})
+
+function currencyFractionDigits(currency: string): number {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+    }).resolvedOptions().maximumFractionDigits ?? 2
+  } catch {
+    return 2
+  }
+}
+
+function roundPaymentAmount(value: number, currency: string): number {
+  if (!Number.isFinite(value)) return 0
+  const factor = 10 ** currencyFractionDigits(currency)
+  return Math.round(value * factor) / factor
+}
+
+function ceilPaymentAmount(value: number, currency: string): number {
+  if (!Number.isFinite(value)) return 0
+  const factor = 10 ** currencyFractionDigits(currency)
+  return Math.ceil(value * factor) / factor
+}
+
+function formatSelectedPaymentAmount(value: number): string {
+  return formatPaymentAmount(value, selectedCurrency.value, localeCode.value)
+}
+
+function formatSelectedSubscriptionPaymentAmount(value: number): string {
+  return formatSelectedPaymentAmount(roundPaymentAmount(value, selectedCurrency.value))
+}
 
 const methodOptions = computed<PaymentMethodOption[]>(() =>
   enabledMethods.value.map((type) => {
@@ -687,34 +724,46 @@ const canSubmit = computed(() =>
     && selectedLimit.value?.available !== false
 )
 
-// Subscription-specific: method options based on plan price
+const subPaymentAmount = computed(() => {
+  const price = selectedPlan.value?.price ?? 0
+  return roundPaymentAmount(price, selectedCurrency.value)
+})
+
+const subFeeAmount = computed(() => {
+  if (feeRate.value <= 0 || subPaymentAmount.value <= 0) return 0
+  return ceilPaymentAmount((subPaymentAmount.value * feeRate.value) / 100, selectedCurrency.value)
+})
+
+const subTotalAmount = computed(() => {
+  if (feeRate.value <= 0 || subPaymentAmount.value <= 0) return subPaymentAmount.value
+  return roundPaymentAmount(subPaymentAmount.value + subFeeAmount.value, selectedCurrency.value)
+})
+
+function subscriptionTotalAmountForCurrency(value: number, currency: string): number {
+  const paymentAmount = roundPaymentAmount(value, currency)
+  if (feeRate.value <= 0 || paymentAmount <= 0) return paymentAmount
+  const fee = ceilPaymentAmount((paymentAmount * feeRate.value) / 100, currency)
+  return roundPaymentAmount(paymentAmount + fee, currency)
+}
+
+// Subscription-specific: method options based on gateway pay amount.
 const subMethodOptions = computed<PaymentMethodOption[]>(() => {
-  const planPrice = selectedPlan.value?.price ?? 0
+  const price = selectedPlan.value?.price ?? 0
   return enabledMethods.value.map((type) => {
     const ml = visibleMethods.value[type]
+    const currency = normalizePaymentCurrency(ml?.currency)
+    const total = subscriptionTotalAmountForCurrency(price, currency)
     return {
       type,
       fee_rate: ml?.fee_rate ?? 0,
-      available: ml?.available !== false && amountFitsMethod(planPrice, type),
+      available: ml?.available !== false && amountFitsMethod(total, type),
     }
   })
 })
 
-const subFeeAmount = computed(() => {
-  const price = selectedPlan.value?.price ?? 0
-  if (feeRate.value <= 0 || price <= 0) return 0
-  return Math.ceil(((price * feeRate.value) / 100) * 100) / 100
-})
-
-const subTotalAmount = computed(() => {
-  const price = selectedPlan.value?.price ?? 0
-  if (feeRate.value <= 0 || price <= 0) return price
-  return Math.round((price + subFeeAmount.value) * 100) / 100
-})
-
 const canSubmitSubscription = computed(() =>
   selectedPlan.value !== null
-    && amountFitsMethod(selectedPlan.value.price, selectedMethod.value)
+    && amountFitsMethod(subTotalAmount.value, selectedMethod.value)
     && selectedLimit.value?.available !== false
 )
 
