@@ -2380,37 +2380,7 @@ func (r *stubUsageLogRepo) GetUserAccountSharingDashboard(ctx context.Context, u
 }
 
 func (r *stubUsageLogRepo) ListWithFilters(ctx context.Context, params pagination.PaginationParams, filters usagestats.UsageLogFilters) ([]service.UsageLog, *pagination.PaginationResult, error) {
-	logs := r.userLogs[filters.UserID]
-
-	// Apply filters
-	var filtered []service.UsageLog
-	for _, log := range logs {
-		// Apply APIKeyID filter
-		if filters.APIKeyID > 0 && log.APIKeyID != filters.APIKeyID {
-			continue
-		}
-		// Apply Model filter
-		if filters.Model != "" && log.Model != filters.Model {
-			continue
-		}
-		// Apply Stream filter
-		if filters.Stream != nil && log.Stream != *filters.Stream {
-			continue
-		}
-		// Apply BillingType filter
-		if filters.BillingType != nil && log.BillingType != *filters.BillingType {
-			continue
-		}
-		// Apply time range filters
-		if filters.StartTime != nil && log.CreatedAt.Before(*filters.StartTime) {
-			continue
-		}
-		if filters.EndTime != nil && log.CreatedAt.After(*filters.EndTime) {
-			continue
-		}
-		filtered = append(filtered, log)
-	}
-
+	filtered := r.logsWithFilters(filters)
 	total := int64(len(filtered))
 	out := paginateLogs(filtered, params)
 	return out, paginationResult(total, params), nil
@@ -2425,8 +2395,75 @@ func (r *stubUsageLogRepo) GetAccountUsageStats(ctx context.Context, accountID i
 }
 
 func (r *stubUsageLogRepo) GetStatsWithFilters(ctx context.Context, filters usagestats.UsageLogFilters) (*usagestats.UsageStats, error) {
-	return nil, errors.New("not implemented")
+	logs := r.logsWithFilters(filters)
+	stats := &usagestats.UsageStats{}
+	var totalDuration int64
+	var durationCount int64
+
+	for _, log := range logs {
+		stats.TotalRequests++
+		stats.TotalInputTokens += int64(log.InputTokens)
+		stats.TotalOutputTokens += int64(log.OutputTokens)
+		stats.TotalCacheCreationTokens += int64(log.CacheCreationTokens)
+		stats.TotalCacheReadTokens += int64(log.CacheReadTokens)
+		stats.TotalCacheTokens += int64(log.CacheCreationTokens + log.CacheReadTokens)
+		stats.TotalCost += log.TotalCost
+		stats.TotalActualCost += log.ActualCost
+		if log.DurationMs != nil {
+			totalDuration += int64(*log.DurationMs)
+			durationCount++
+		}
+	}
+	stats.TotalTokens = stats.TotalInputTokens + stats.TotalOutputTokens + stats.TotalCacheTokens
+	if durationCount > 0 {
+		stats.AverageDurationMs = float64(totalDuration) / float64(durationCount)
+	}
+	return stats, nil
 }
+
+func (r *stubUsageLogRepo) logsWithFilters(filters usagestats.UsageLogFilters) []service.UsageLog {
+	logs := r.userLogs[filters.UserID]
+	filtered := make([]service.UsageLog, 0, len(logs))
+	for _, log := range logs {
+		if !matchesUsageLogFilters(log, filters) {
+			continue
+		}
+		filtered = append(filtered, log)
+	}
+	return filtered
+}
+
+func matchesUsageLogFilters(log service.UsageLog, filters usagestats.UsageLogFilters) bool {
+	if filters.APIKeyID > 0 && log.APIKeyID != filters.APIKeyID {
+		return false
+	}
+	if filters.AccountID > 0 && log.AccountID != filters.AccountID {
+		return false
+	}
+	if filters.GroupID > 0 && (log.GroupID == nil || *log.GroupID != filters.GroupID) {
+		return false
+	}
+	if filters.Model != "" && log.Model != filters.Model {
+		return false
+	}
+	if filters.Stream != nil && log.Stream != *filters.Stream {
+		return false
+	}
+	if filters.BillingType != nil && log.BillingType != *filters.BillingType {
+		return false
+	}
+	if filters.RequestType != nil && int16(log.RequestType) != *filters.RequestType {
+		return false
+	}
+	if filters.StartTime != nil && log.CreatedAt.Before(*filters.StartTime) {
+		return false
+	}
+	if filters.EndTime != nil && !log.CreatedAt.Before(*filters.EndTime) {
+		return false
+	}
+	return true
+}
+
 func (r *stubUsageLogRepo) GetAllGroupUsageSummary(ctx context.Context, todayStart time.Time) ([]usagestats.GroupUsageSummary, error) {
 	return nil, errors.New("not implemented")
 }
