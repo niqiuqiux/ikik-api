@@ -23,6 +23,18 @@ type subscriptionCacheInvalidator interface {
 	InvalidateSubscription(ctx context.Context, userID, groupID int64) error
 }
 
+type userCarpoolGroupFinder interface {
+	FindUserCarpoolByOwnerAndPlatform(ctx context.Context, userID int64, platform string) (*Group, error)
+}
+
+type carpoolActivePoolByUserFinder interface {
+	FindActivePoolByUserID(ctx context.Context, userID, excludePoolID int64) (*CarpoolPool, error)
+}
+
+type carpoolMemberUsageStatsByPoolLister interface {
+	ListPoolMemberUsageStatsByPoolID(ctx context.Context, poolID int64, userIDs []int64) (map[int64]CarpoolMemberUsageStats, error)
+}
+
 type CarpoolService struct {
 	repo                    CarpoolRepository
 	groupRepo               GroupRepository
@@ -179,7 +191,24 @@ func (s *CarpoolService) GetUsageOverviewByGroupAndUser(ctx context.Context, gro
 	}
 	pool, err := s.repo.GetPoolByGroupID(ctx, groupID)
 	if errors.Is(err, ErrCarpoolPoolNotFound) {
-		return nil, nil
+		if s.groupRepo == nil {
+			return nil, nil
+		}
+		group, groupErr := s.groupRepo.GetByID(ctx, groupID)
+		if groupErr != nil || group == nil || !group.IsUserCarpoolScope() || group.OwnerUserID == nil || *group.OwnerUserID != userID {
+			return nil, nil
+		}
+		finder, ok := s.repo.(carpoolActivePoolByUserPlatformFinder)
+		if !ok {
+			return nil, ErrServiceUnavailable
+		}
+		pool, err = finder.FindActivePoolByUserAndPlatform(ctx, userID, group.Platform)
+		if err != nil {
+			return nil, err
+		}
+		if pool == nil {
+			return nil, nil
+		}
 	}
 	if err != nil {
 		return nil, err
@@ -431,6 +460,150 @@ func (s *CarpoolService) allocateSystemProxyIDs(ctx context.Context, accountCoun
 	return ids, nil
 }
 
+func (s *CarpoolService) ensureNoActiveCarpoolForUser(ctx context.Context, userID, excludePoolID int64) error {
+	if userID <= 0 {
+		return ErrUserNotFound
+	}
+	finder, ok := s.repo.(carpoolActivePoolByUserFinder)
+	if !ok {
+		return ErrServiceUnavailable
+	}
+	pool, err := finder.FindActivePoolByUserID(ctx, userID, excludePoolID)
+	if err != nil {
+		return fmt.Errorf("check active carpool pool: %w", err)
+	}
+	if pool != nil {
+		return ErrCarpoolUserAlreadyInPool
+	}
+	return nil
+}
+
+func (s *CarpoolService) ensureUserCarpoolGroupSubscription(ctx context.Context, userID int64, platform string, validityDays int, notes string, riskControl bool) (*Group, *UserSubscription, error) {
+	if s == nil || s.groupRepo == nil || s.userRepo == nil || s.subscriptionService == nil {
+		return nil, nil, ErrServiceUnavailable
+	}
+	group, err := s.findOrCreateUserCarpoolGroup(ctx, userID, platform)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !group.IsActive() || !group.IsSubscriptionType() || group.OwnerUserID == nil || *group.OwnerUserID != userID {
+		return nil, nil, ErrGroupNotAllowed
+	}
+	if validityDays <= 0 {
+		validityDays = group.DefaultValidityDays
+	}
+	if validityDays <= 0 {
+		validityDays = UserPrivateGroupValidityDays
+	}
+	sub, _, err := s.subscriptionService.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
+		UserID:       userID,
+		GroupID:      group.ID,
+		ValidityDays: validityDays,
+		Notes:        strings.TrimSpace(notes),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("assign user carpool subscription: %w", err)
+	}
+	if err := s.userRepo.AddGroupToAllowedGroups(ctx, userID, group.ID); err != nil {
+		return nil, nil, fmt.Errorf("add user carpool group to user: %w", err)
+	}
+	if riskControl && s.settingService != nil {
+		if err := s.settingService.AddContentModerationGroup(ctx, group.ID); err != nil {
+			return nil, nil, fmt.Errorf("assign user carpool risk control group: %w", err)
+		}
+	}
+	s.invalidateUserCarpoolGroupCaches(ctx, userID, group.ID)
+	return group, sub, nil
+}
+
+func (s *CarpoolService) findOrCreateUserCarpoolGroup(ctx context.Context, userID int64, platform string) (*Group, error) {
+	if s == nil || s.groupRepo == nil {
+		return nil, ErrServiceUnavailable
+	}
+	platform = NormalizeCarpoolPlatform(platform)
+	if !IsSupportedUserCarpoolGroupPlatform(platform) {
+		return nil, ErrCarpoolInvalidPlatform
+	}
+	group, err := s.findUserCarpoolGroup(ctx, userID, platform)
+	if err == nil {
+		return group, nil
+	}
+	if !errors.Is(err, ErrGroupNotFound) {
+		return nil, err
+	}
+
+	template := &UserPrivateGroupTemplate{RateMultiplier: 1}
+	if s.settingService != nil {
+		if loaded, loadErr := s.settingService.GetUserPrivateGroupTemplate(ctx); loadErr == nil && loaded != nil {
+			template = loaded
+		}
+	}
+	if template.RateMultiplier <= 0 {
+		template.RateMultiplier = 1
+	}
+	if template.RPMLimit < 0 {
+		template.RPMLimit = 0
+	}
+
+	ownerID := userID
+	group = &Group{
+		Name:                        CarpoolUserGroupName(userID, platform),
+		Description:                 fmt.Sprintf("Carpool subscription group for user %d on %s.", userID, platform),
+		Platform:                    platform,
+		RateMultiplier:              template.RateMultiplier,
+		IsExclusive:                 true,
+		Status:                      StatusActive,
+		OwnerUserID:                 &ownerID,
+		Scope:                       GroupScopeUserCarpool,
+		SubscriptionType:            SubscriptionTypeSubscription,
+		DefaultValidityDays:         UserPrivateGroupValidityDays,
+		RPMLimit:                    template.RPMLimit,
+		AllowMessagesDispatch:       defaultPrivateGroupAllowMessagesDispatch(platform),
+		SupportedModelScopes:        []string{},
+		MessagesDispatchModelConfig: OpenAIMessagesDispatchModelConfig{},
+	}
+	if err := s.groupRepo.Create(ctx, group); err != nil {
+		if errors.Is(err, ErrGroupExists) {
+			return s.findUserCarpoolGroup(ctx, userID, platform)
+		}
+		return nil, fmt.Errorf("create user carpool group: %w", err)
+	}
+	return group, nil
+}
+
+func (s *CarpoolService) findUserCarpoolGroup(ctx context.Context, userID int64, platform string) (*Group, error) {
+	if s == nil || s.groupRepo == nil {
+		return nil, ErrServiceUnavailable
+	}
+	platform = NormalizeCarpoolPlatform(platform)
+	if finder, ok := s.groupRepo.(userCarpoolGroupFinder); ok {
+		return finder.FindUserCarpoolByOwnerAndPlatform(ctx, userID, platform)
+	}
+	groups, err := s.groupRepo.ListActiveByPlatform(ctx, platform)
+	if err != nil {
+		return nil, fmt.Errorf("list user carpool groups: %w", err)
+	}
+	for i := range groups {
+		group := &groups[i]
+		if group.OwnerUserID != nil && *group.OwnerUserID == userID && group.IsUserCarpoolScope() {
+			return group, nil
+		}
+	}
+	return nil, ErrGroupNotFound
+}
+
+func (s *CarpoolService) invalidateUserCarpoolGroupCaches(ctx context.Context, userID, groupID int64) {
+	if groupID <= 0 {
+		return
+	}
+	if s.subscriptionInvalidator != nil && userID > 0 {
+		_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, userID, groupID)
+	}
+	if s.authCacheInvalidator != nil {
+		s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, groupID)
+	}
+}
+
 func (s *CarpoolService) CreatePool(ctx context.Context, ownerUserID int64, req CreateCarpoolPoolRequest) (*CarpoolPoolDetail, error) {
 	if req.TargetSeats < 2 || req.TargetSeats > 6 {
 		return nil, ErrCarpoolInvalidSeats
@@ -441,6 +614,9 @@ func (s *CarpoolService) CreatePool(ctx context.Context, ownerUserID int64, req 
 	platform := NormalizeCarpoolPlatform(req.Platform)
 	if !IsSupportedCarpoolPlatform(platform) {
 		return nil, ErrCarpoolInvalidPlatform
+	}
+	if err := s.ensureNoActiveCarpoolForUser(ctx, ownerUserID, 0); err != nil {
+		return nil, err
 	}
 
 	pool, err := s.repo.CreatePool(ctx, CreateCarpoolPoolInput{
@@ -463,40 +639,12 @@ func (s *CarpoolService) CreatePool(ctx context.Context, ownerUserID int64, req 
 		return nil, fmt.Errorf("create carpool pool: %w", err)
 	}
 
-	groupName := CarpoolGroupName(pool.ID, pool.Name)
-	group := &Group{
-		Name:             groupName,
-		Description:      strings.TrimSpace(req.Notes),
-		Platform:         platform,
-		RateMultiplier:   1,
-		IsExclusive:      true,
-		Status:           StatusActive,
-		Scope:            GroupScopePublic,
-		SubscriptionType: SubscriptionTypeSubscription,
-	}
-	if err := s.groupRepo.Create(ctx, group); err != nil {
-		return nil, fmt.Errorf("create carpool group: %w", err)
-	}
-	if pool.RiskControlEnabled && s.settingService != nil {
-		if err := s.settingService.AddContentModerationGroup(ctx, group.ID); err != nil {
-			return nil, fmt.Errorf("assign carpool risk control group: %w", err)
-		}
-	}
-
 	now := time.Now().UTC()
-	sub, _, err := s.subscriptionService.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
-		UserID:       ownerUserID,
-		GroupID:      group.ID,
-		ValidityDays: req.DurationDays,
-		Notes:        "carpool owner auto-assignment",
-	})
+	_, sub, err := s.ensureUserCarpoolGroupSubscription(ctx, ownerUserID, platform, req.DurationDays, "carpool owner auto-assignment", pool.RiskControlEnabled)
 	if err != nil {
 		return nil, fmt.Errorf("assign owner carpool subscription: %w", err)
 	}
 
-	if _, err := s.repo.UpdatePoolGroupAndQuota(ctx, pool.ID, &group.ID, CarpoolQuotaSnapshot{}); err != nil {
-		return nil, fmt.Errorf("update carpool group binding: %w", err)
-	}
 	if _, err := s.repo.UpsertMember(ctx, UpsertCarpoolMemberInput{
 		PoolID:           pool.ID,
 		UserID:           ownerUserID,
@@ -509,9 +657,6 @@ func (s *CarpoolService) CreatePool(ctx context.Context, ownerUserID int64, req 
 		WeeklyLimitUSD:   0,
 	}); err != nil {
 		return nil, fmt.Errorf("create owner carpool member: %w", err)
-	}
-	if s.subscriptionInvalidator != nil {
-		_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, ownerUserID, group.ID)
 	}
 
 	return s.GetDetail(ctx, ownerUserID, pool.ID)
@@ -526,13 +671,13 @@ func (s *CarpoolService) BindAccounts(ctx context.Context, ownerUserID, poolID i
 	if err != nil {
 		return nil, err
 	}
-	if pool.GroupID == nil || *pool.GroupID <= 0 {
-		return nil, ErrGroupNotFound
-	}
 
-	group, err := s.groupRepo.GetByID(ctx, *pool.GroupID)
-	if err != nil {
-		return nil, fmt.Errorf("get carpool group: %w", err)
+	var group *Group
+	if pool.GroupID != nil && *pool.GroupID > 0 {
+		group, err = s.groupRepo.GetByID(ctx, *pool.GroupID)
+		if err != nil {
+			return nil, fmt.Errorf("get carpool group: %w", err)
+		}
 	}
 
 	accounts := make([]*Account, 0, len(accountIDs))
@@ -544,8 +689,25 @@ func (s *CarpoolService) BindAccounts(ctx context.Context, ownerUserID, poolID i
 		}
 	}
 	if pool.RiskControlEnabled && s.settingService != nil {
-		if err := s.settingService.AddContentModerationGroup(ctx, group.ID); err != nil {
-			return nil, fmt.Errorf("assign carpool risk control group: %w", err)
+		if group != nil && group.ID > 0 {
+			if err := s.settingService.AddContentModerationGroup(ctx, group.ID); err != nil {
+				return nil, fmt.Errorf("assign carpool risk control group: %w", err)
+			}
+		} else if members, memberErr := s.repo.ListPoolMembers(ctx, pool.ID); memberErr != nil {
+			return nil, fmt.Errorf("list carpool members for risk control: %w", memberErr)
+		} else {
+			for i := range members {
+				if members[i].Status != CarpoolMemberStatusActive {
+					continue
+				}
+				userGroup, groupErr := s.findOrCreateUserCarpoolGroup(ctx, members[i].UserID, pool.Platform)
+				if groupErr != nil {
+					return nil, groupErr
+				}
+				if err := s.settingService.AddContentModerationGroup(ctx, userGroup.ID); err != nil {
+					return nil, fmt.Errorf("assign user carpool risk control group: %w", err)
+				}
+			}
 		}
 	}
 	for _, accountID := range accountIDs {
@@ -576,10 +738,12 @@ func (s *CarpoolService) BindAccounts(ctx context.Context, ownerUserID, poolID i
 		if err := s.accountRepo.Update(ctx, account); err != nil {
 			return nil, fmt.Errorf("update carpool account %d: %w", accountID, err)
 		}
-		groupIDs := append([]int64(nil), account.GroupIDs...)
-		groupIDs = append(groupIDs, group.ID)
-		if err := s.accountRepo.BindGroups(ctx, account.ID, uniquePositiveCarpoolIDs(groupIDs)); err != nil {
-			return nil, fmt.Errorf("bind carpool account %d to group: %w", accountID, err)
+		if group != nil && group.ID > 0 {
+			groupIDs := append([]int64(nil), account.GroupIDs...)
+			groupIDs = append(groupIDs, group.ID)
+			if err := s.accountRepo.BindGroups(ctx, account.ID, uniquePositiveCarpoolIDs(groupIDs)); err != nil {
+				return nil, fmt.Errorf("bind carpool account %d to group: %w", accountID, err)
+			}
 		}
 		accounts = append(accounts, account)
 	}
@@ -595,12 +759,14 @@ func (s *CarpoolService) BindAccounts(ctx context.Context, ownerUserID, poolID i
 	if err := s.repo.UpdateMembersQuotaFromSnapshot(ctx, pool.ID, snapshot, defaultCarpoolQuotaShare(pool.TargetSeats)); err != nil {
 		return nil, fmt.Errorf("update carpool member quota limits: %w", err)
 	}
-	group.WeeklyLimitUSD = positiveFloat64Ptr(s.carpoolGroupWeeklyLimit(ctx, pool.ID, snapshot.PerMemberWeeklyLimitUSD))
-	if err := s.groupRepo.Update(ctx, group); err != nil {
-		return nil, fmt.Errorf("update carpool group weekly limit: %w", err)
-	}
-	if s.authCacheInvalidator != nil {
-		s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, group.ID)
+	if group != nil && group.ID > 0 {
+		group.WeeklyLimitUSD = positiveFloat64Ptr(s.carpoolGroupWeeklyLimit(ctx, pool.ID, snapshot.PerMemberWeeklyLimitUSD))
+		if err := s.groupRepo.Update(ctx, group); err != nil {
+			return nil, fmt.Errorf("update carpool group weekly limit: %w", err)
+		}
+		if s.authCacheInvalidator != nil {
+			s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, group.ID)
+		}
 	}
 
 	return s.GetDetail(ctx, ownerUserID, poolID)
@@ -676,6 +842,8 @@ func (s *CarpoolService) ResetPoolAccountLocalLimit(ctx context.Context, ownerUs
 
 	if pool.GroupID != nil && *pool.GroupID > 0 && s.authCacheInvalidator != nil {
 		s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, *pool.GroupID)
+	} else if userGroup, groupErr := s.findUserCarpoolGroup(ctx, ownerUserID, pool.Platform); groupErr == nil && userGroup != nil {
+		s.invalidateUserCarpoolGroupCaches(ctx, ownerUserID, userGroup.ID)
 	}
 	return s.GetDetail(ctx, ownerUserID, poolID)
 }
@@ -692,20 +860,54 @@ func (s *CarpoolService) deletePool(ctx context.Context, pool *CarpoolPool) erro
 	if pool == nil {
 		return ErrCarpoolPoolNotFound
 	}
+	members, err := s.repo.ListPoolMembers(ctx, pool.ID)
+	if err != nil {
+		return fmt.Errorf("list carpool members before delete: %w", err)
+	}
+
 	var affectedUserIDs []int64
+	var legacyGroupID int64
 	if pool.GroupID != nil && *pool.GroupID > 0 {
-		if pool.RiskControlEnabled && s.settingService != nil {
-			if err := s.settingService.RemoveContentModerationGroup(ctx, *pool.GroupID); err != nil {
-				return fmt.Errorf("remove carpool risk control group: %w", err)
+		group, groupErr := s.groupRepo.GetByID(ctx, *pool.GroupID)
+		if groupErr != nil && !errors.Is(groupErr, ErrGroupNotFound) {
+			return fmt.Errorf("load carpool group before delete: %w", groupErr)
+		}
+		if group == nil || !group.IsUserCarpoolScope() {
+			legacyGroupID = *pool.GroupID
+			if pool.RiskControlEnabled && s.settingService != nil {
+				if err := s.settingService.RemoveContentModerationGroup(ctx, legacyGroupID); err != nil {
+					return fmt.Errorf("remove carpool risk control group: %w", err)
+				}
+			}
+			var err error
+			affectedUserIDs, err = s.groupRepo.DeleteCascade(ctx, legacyGroupID)
+			if err != nil && !errors.Is(err, ErrGroupNotFound) {
+				return fmt.Errorf("delete carpool group: %w", err)
+			}
+			if s.authCacheInvalidator != nil {
+				s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, legacyGroupID)
 			}
 		}
-		var err error
-		affectedUserIDs, err = s.groupRepo.DeleteCascade(ctx, *pool.GroupID)
-		if err != nil && !errors.Is(err, ErrGroupNotFound) {
-			return fmt.Errorf("delete carpool group: %w", err)
-		}
-		if s.authCacheInvalidator != nil {
-			s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, *pool.GroupID)
+	}
+	if legacyGroupID == 0 {
+		for i := range members {
+			member := members[i]
+			if member.Status != CarpoolMemberStatusActive {
+				continue
+			}
+			if member.SubscriptionID != nil && *member.SubscriptionID > 0 && s.subscriptionService != nil {
+				if err := s.subscriptionService.RevokeSubscription(ctx, *member.SubscriptionID); err != nil && !errors.Is(err, ErrSubscriptionNotFound) {
+					return fmt.Errorf("revoke carpool member subscription: %w", err)
+				}
+			}
+			if pool.RiskControlEnabled && s.settingService != nil {
+				if userGroup, groupErr := s.findUserCarpoolGroup(ctx, member.UserID, pool.Platform); groupErr == nil && userGroup != nil {
+					if err := s.settingService.RemoveContentModerationGroup(ctx, userGroup.ID); err != nil {
+						return fmt.Errorf("remove user carpool risk control group: %w", err)
+					}
+					s.invalidateUserCarpoolGroupCaches(ctx, member.UserID, userGroup.ID)
+				}
+			}
 		}
 	}
 	if err := s.repo.DeletePool(ctx, pool.ID); err != nil {
@@ -716,16 +918,16 @@ func (s *CarpoolService) deletePool(ctx context.Context, pool *CarpoolPool) erro
 	}
 	if s.subscriptionInvalidator != nil {
 		seen := map[int64]struct{}{pool.OwnerUserID: struct{}{}}
-		if pool.GroupID != nil && *pool.GroupID > 0 {
-			_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, pool.OwnerUserID, *pool.GroupID)
+		if legacyGroupID > 0 {
+			_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, pool.OwnerUserID, legacyGroupID)
 		}
 		for _, userID := range affectedUserIDs {
 			if _, ok := seen[userID]; ok {
 				continue
 			}
 			seen[userID] = struct{}{}
-			if pool.GroupID != nil && *pool.GroupID > 0 {
-				_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, userID, *pool.GroupID)
+			if legacyGroupID > 0 {
+				_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, userID, legacyGroupID)
 			}
 		}
 	}
@@ -749,6 +951,9 @@ func (s *CarpoolService) apply(ctx context.Context, userID, poolID int64, req Ap
 	}
 	if pool.Status == CarpoolPoolStatusClosed {
 		return nil, ErrCarpoolPoolClosed
+	}
+	if err := s.ensureNoActiveCarpoolForUser(ctx, userID, poolID); err != nil {
+		return nil, err
 	}
 	if existingMember, _ := s.repo.GetMemberByPoolAndUser(ctx, poolID, userID); existingMember != nil && existingMember.Status == CarpoolMemberStatusActive {
 		return nil, ErrCarpoolAlreadyMember
@@ -839,9 +1044,6 @@ func (s *CarpoolService) ConfirmJoinPaid(ctx context.Context, ownerUserID, poolI
 	if err != nil {
 		return nil, err
 	}
-	if pool.GroupID == nil || *pool.GroupID <= 0 {
-		return nil, ErrGroupNotFound
-	}
 	request, err := s.repo.GetJoinRequestByID(ctx, requestID)
 	if err != nil {
 		return nil, err
@@ -852,17 +1054,15 @@ func (s *CarpoolService) ConfirmJoinPaid(ctx context.Context, ownerUserID, poolI
 	if request.Status != CarpoolJoinRequestStatusApproved {
 		return nil, ErrCarpoolJoinRequestNotApproved
 	}
+	if err := s.ensureNoActiveCarpoolForUser(ctx, request.UserID, poolID); err != nil {
+		return nil, err
+	}
 	if activeMember, _ := s.repo.GetMemberByPoolAndUser(ctx, poolID, request.UserID); activeMember != nil && activeMember.Status == CarpoolMemberStatusActive {
 		return nil, ErrCarpoolAlreadyMember
 	}
 
 	now := time.Now().UTC()
-	sub, _, err := s.subscriptionService.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
-		UserID:       request.UserID,
-		GroupID:      *pool.GroupID,
-		ValidityDays: pool.DurationDays,
-		Notes:        fmt.Sprintf("carpool pool %d member activation", poolID),
-	})
+	userGroup, sub, err := s.ensureUserCarpoolGroupSubscription(ctx, request.UserID, pool.Platform, pool.DurationDays, fmt.Sprintf("carpool pool %d member activation", poolID), pool.RiskControlEnabled)
 	if err != nil {
 		return nil, fmt.Errorf("assign carpool member subscription: %w", err)
 	}
@@ -894,9 +1094,7 @@ func (s *CarpoolService) ConfirmJoinPaid(ctx context.Context, ownerUserID, poolI
 	if err := s.refreshPoolStatus(ctx, pool); err != nil {
 		return nil, err
 	}
-	if s.subscriptionInvalidator != nil {
-		_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, request.UserID, *pool.GroupID)
-	}
+	s.invalidateUserCarpoolGroupCaches(ctx, request.UserID, userGroup.ID)
 
 	return s.GetDetail(ctx, ownerUserID, poolID)
 }
@@ -934,6 +1132,13 @@ func (s *CarpoolService) RemoveMember(ctx context.Context, ownerUserID, poolID, 
 	}
 	if pool.GroupID != nil && *pool.GroupID > 0 && s.subscriptionInvalidator != nil {
 		_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, member.UserID, *pool.GroupID)
+	} else if userGroup, groupErr := s.findUserCarpoolGroup(ctx, member.UserID, pool.Platform); groupErr == nil && userGroup != nil {
+		s.invalidateUserCarpoolGroupCaches(ctx, member.UserID, userGroup.ID)
+		if pool.RiskControlEnabled && s.settingService != nil {
+			if err := s.settingService.RemoveContentModerationGroup(ctx, userGroup.ID); err != nil {
+				return nil, fmt.Errorf("remove user carpool risk control group: %w", err)
+			}
+		}
 	}
 	if err := s.refreshPoolStatus(ctx, pool); err != nil {
 		return nil, err
@@ -1053,21 +1258,33 @@ func (s *CarpoolService) repairPoolIntegrity(ctx context.Context, pool *CarpoolP
 	if pool.Status == CarpoolPoolStatusClosed {
 		return false, nil
 	}
-	pool, group, repaired, err := s.ensureCarpoolPoolGroup(ctx, pool)
-	if err != nil {
-		return repaired, err
-	}
-	if group == nil || group.ID <= 0 {
-		return repaired, nil
+	var repaired bool
+	var group *Group
+	var legacyGroupID int64
+	if pool.GroupID != nil && *pool.GroupID > 0 {
+		var err error
+		pool, group, repaired, err = s.ensureCarpoolPoolGroup(ctx, pool)
+		if err != nil {
+			return repaired, err
+		}
+		if group != nil && group.ID > 0 && !group.IsUserCarpoolScope() {
+			legacyGroupID = group.ID
+		}
 	}
 
-	accountRepaired, err := s.repairPoolAccountBindings(ctx, pool, group.ID)
+	accountRepaired, err := s.repairPoolAccountBindings(ctx, pool, legacyGroupID)
 	if err != nil {
 		return repaired || accountRepaired, err
 	}
 	repaired = repaired || accountRepaired
 
-	memberRepaired, affectedUserIDs, err := s.repairPoolMemberSubscriptions(ctx, pool, group.ID)
+	var memberRepaired bool
+	var affectedUserIDs []int64
+	if legacyGroupID > 0 {
+		memberRepaired, affectedUserIDs, err = s.repairPoolMemberSubscriptions(ctx, pool, legacyGroupID)
+	} else {
+		memberRepaired, affectedUserIDs, err = s.repairUserCarpoolMemberSubscriptions(ctx, pool)
+	}
 	if err != nil {
 		return repaired || memberRepaired, err
 	}
@@ -1076,8 +1293,8 @@ func (s *CarpoolService) repairPoolIntegrity(ctx context.Context, pool *CarpoolP
 		if err := s.refreshPoolStatus(ctx, pool); err != nil {
 			return true, err
 		}
-		if s.authCacheInvalidator != nil {
-			s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, group.ID)
+		if s.authCacheInvalidator != nil && legacyGroupID > 0 {
+			s.authCacheInvalidator.InvalidateAuthCacheByGroupID(ctx, legacyGroupID)
 		}
 		s.invalidateCarpoolMemberSubscriptionCaches(ctx, pool, affectedUserIDs)
 	}
@@ -1096,6 +1313,9 @@ func (s *CarpoolService) ensureCarpoolPoolGroup(ctx context.Context, pool *Carpo
 			return pool, nil, repaired, fmt.Errorf("load carpool group: %w", err)
 		}
 		group = loaded
+		if group != nil && group.IsUserCarpoolScope() {
+			return pool, group, repaired, nil
+		}
 	}
 	if group == nil {
 		group = &Group{
@@ -1181,7 +1401,7 @@ func (s *CarpoolService) ensureCarpoolPoolGroup(ctx context.Context, pool *Carpo
 }
 
 func (s *CarpoolService) repairPoolAccountBindings(ctx context.Context, pool *CarpoolPool, groupID int64) (bool, error) {
-	if s.repo == nil || s.accountRepo == nil || pool == nil || groupID <= 0 {
+	if s.repo == nil || s.accountRepo == nil || pool == nil {
 		return false, nil
 	}
 	trackedAccounts, err := s.repo.ListPoolAccounts(ctx, pool.ID)
@@ -1234,7 +1454,7 @@ func (s *CarpoolService) repairPoolAccountBindings(ctx context.Context, pool *Ca
 			}
 			repaired = true
 		}
-		if !containsCarpoolInt64(account.GroupIDs, groupID) {
+		if groupID > 0 && !containsCarpoolInt64(account.GroupIDs, groupID) {
 			nextGroupIDs := append([]int64(nil), account.GroupIDs...)
 			nextGroupIDs = append(nextGroupIDs, groupID)
 			if err := s.accountRepo.BindGroups(ctx, account.ID, uniquePositiveCarpoolIDs(nextGroupIDs)); err != nil {
@@ -1299,6 +1519,80 @@ func (s *CarpoolService) repairPoolMemberSubscriptions(ctx context.Context, pool
 		}
 	}
 	return repaired, affectedUserIDs, nil
+}
+
+func (s *CarpoolService) repairUserCarpoolMemberSubscriptions(ctx context.Context, pool *CarpoolPool) (bool, []int64, error) {
+	if s.repo == nil || s.userSubRepo == nil || pool == nil {
+		return false, nil, nil
+	}
+	members, err := s.repo.ListPoolMembers(ctx, pool.ID)
+	if err != nil {
+		return false, nil, fmt.Errorf("list carpool members for repair: %w", err)
+	}
+	var repaired bool
+	affectedUserIDs := make([]int64, 0, len(members)+1)
+	ownerActive := false
+	for i := range members {
+		member := members[i]
+		if member.Status != CarpoolMemberStatusActive {
+			continue
+		}
+		if member.UserID == pool.OwnerUserID && member.Role == CarpoolMemberRoleOwner {
+			ownerActive = true
+		}
+		itemRepaired, err := s.repairActiveUserCarpoolMemberSubscription(ctx, pool, member)
+		if err != nil {
+			return repaired, affectedUserIDs, err
+		}
+		if itemRepaired {
+			repaired = true
+			affectedUserIDs = append(affectedUserIDs, member.UserID)
+		}
+	}
+	if !ownerActive && pool.OwnerUserID > 0 {
+		paidAt := pool.CreatedAt.UTC()
+		member := CarpoolMember{
+			PoolID:           pool.ID,
+			UserID:           pool.OwnerUserID,
+			Role:             CarpoolMemberRoleOwner,
+			Status:           CarpoolMemberStatusActive,
+			PaidConfirmedAt:  &paidAt,
+			QuotaShareRatio:  defaultCarpoolQuotaShare(pool.TargetSeats),
+			FiveHourLimitUSD: pool.PerMemberFiveHourLimitUSD,
+			FiveHourUsedUSD:  0,
+			WeeklyLimitUSD:   pool.PerMemberWeeklyLimitUSD,
+			CreatedAt:        pool.CreatedAt,
+			UpdatedAt:        pool.UpdatedAt,
+		}
+		itemRepaired, err := s.repairActiveUserCarpoolMemberSubscription(ctx, pool, member)
+		if err != nil {
+			return repaired, affectedUserIDs, err
+		}
+		if itemRepaired {
+			repaired = true
+			affectedUserIDs = append(affectedUserIDs, pool.OwnerUserID)
+		}
+	}
+	return repaired, affectedUserIDs, nil
+}
+
+func (s *CarpoolService) repairActiveUserCarpoolMemberSubscription(ctx context.Context, pool *CarpoolPool, member CarpoolMember) (bool, error) {
+	if s.userSubRepo == nil || s.repo == nil || s.userRepo == nil || pool == nil || member.UserID <= 0 {
+		return false, nil
+	}
+	group, err := s.findOrCreateUserCarpoolGroup(ctx, member.UserID, pool.Platform)
+	if err != nil {
+		return false, err
+	}
+	if err := s.userRepo.AddGroupToAllowedGroups(ctx, member.UserID, group.ID); err != nil {
+		return false, fmt.Errorf("add user carpool group to user: %w", err)
+	}
+	if pool.RiskControlEnabled && s.settingService != nil {
+		if err := s.settingService.AddContentModerationGroup(ctx, group.ID); err != nil {
+			return false, fmt.Errorf("assign user carpool risk control group: %w", err)
+		}
+	}
+	return s.repairActiveCarpoolMemberSubscription(ctx, pool, group.ID, member)
 }
 
 func (s *CarpoolService) repairActiveCarpoolMemberSubscription(ctx context.Context, pool *CarpoolPool, groupID int64, member CarpoolMember) (bool, error) {
@@ -1677,6 +1971,10 @@ func (s *CarpoolService) reconcilePoolExternalUsageWithOptions(ctx context.Conte
 	}
 	if s.subscriptionInvalidator != nil && pool.GroupID != nil && *pool.GroupID > 0 {
 		_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, pool.OwnerUserID, *pool.GroupID)
+	} else if pool.GroupID == nil {
+		if userGroup, groupErr := s.findUserCarpoolGroup(ctx, pool.OwnerUserID, pool.Platform); groupErr == nil && userGroup != nil {
+			s.invalidateUserCarpoolGroupCaches(ctx, pool.OwnerUserID, userGroup.ID)
+		}
 	}
 
 	if notifyAccount != nil && shouldNotifyCarpoolExternalOverage(*notifyAccount, now) && s.isOwnerOverCarpoolLimit(ownerMember, ownerSub, group) {
@@ -1848,7 +2146,7 @@ func (s *CarpoolService) carpoolPoolUsageWindows(ctx context.Context, accounts [
 }
 
 func (s *CarpoolService) attachCarpoolMemberUsageStats(ctx context.Context, pool *CarpoolPool, profiles []CarpoolMemberProfile) {
-	if s == nil || s.repo == nil || pool == nil || pool.GroupID == nil || *pool.GroupID <= 0 || len(profiles) == 0 {
+	if s == nil || s.repo == nil || pool == nil || len(profiles) == 0 {
 		return
 	}
 	userIDs := make([]int64, 0, len(profiles))
@@ -1867,9 +2165,24 @@ func (s *CarpoolService) attachCarpoolMemberUsageStats(ctx context.Context, pool
 	if len(userIDs) == 0 {
 		return
 	}
-	statsByUser, err := s.repo.ListPoolMemberUsageStats(ctx, *pool.GroupID, userIDs)
+	var (
+		statsByUser map[int64]CarpoolMemberUsageStats
+		err         error
+	)
+	if lister, ok := s.repo.(carpoolMemberUsageStatsByPoolLister); ok {
+		statsByUser, err = lister.ListPoolMemberUsageStatsByPoolID(ctx, pool.ID, userIDs)
+	} else if pool.GroupID != nil && *pool.GroupID > 0 {
+		statsByUser, err = s.repo.ListPoolMemberUsageStats(ctx, *pool.GroupID, userIDs)
+	}
 	if err != nil {
-		slog.Warn("carpool_member_usage_stats_failed", "pool_id", pool.ID, "group_id", *pool.GroupID, "error", err)
+		var groupID any
+		if pool.GroupID != nil {
+			groupID = *pool.GroupID
+		}
+		slog.Warn("carpool_member_usage_stats_failed", "pool_id", pool.ID, "group_id", groupID, "error", err)
+		return
+	}
+	if statsByUser == nil {
 		return
 	}
 	for i := range profiles {
@@ -2026,7 +2339,7 @@ func earliestCarpoolTime(current, candidate *time.Time) *time.Time {
 }
 
 func (s *CarpoolService) invalidateCarpoolMemberSubscriptionCaches(ctx context.Context, pool *CarpoolPool, userIDs []int64) {
-	if s.subscriptionInvalidator == nil || pool == nil || pool.GroupID == nil || *pool.GroupID <= 0 {
+	if pool == nil {
 		return
 	}
 	seen := make(map[int64]struct{}, len(userIDs))
@@ -2038,7 +2351,15 @@ func (s *CarpoolService) invalidateCarpoolMemberSubscriptionCaches(ctx context.C
 			continue
 		}
 		seen[userID] = struct{}{}
-		_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, userID, *pool.GroupID)
+		if pool.GroupID != nil && *pool.GroupID > 0 {
+			if s.subscriptionInvalidator != nil {
+				_ = s.subscriptionInvalidator.InvalidateSubscription(ctx, userID, *pool.GroupID)
+			}
+			continue
+		}
+		if group, err := s.findUserCarpoolGroup(ctx, userID, pool.Platform); err == nil && group != nil {
+			s.invalidateUserCarpoolGroupCaches(ctx, userID, group.ID)
+		}
 	}
 }
 

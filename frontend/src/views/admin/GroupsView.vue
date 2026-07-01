@@ -3005,7 +3005,7 @@ import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { adminAPI } from "@/api/admin";
-import type { AccountLevel, AdminGroup, GroupPlatform, SubscriptionType } from "@/types";
+import type { AccountLevel, AdminGroup, GroupPlatform, GroupScope, SubscriptionType } from "@/types";
 import type { Column } from "@/components/common/types";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TablePageLayout from "@/components/layout/TablePageLayout.vue";
@@ -3099,6 +3099,7 @@ const exclusiveOptions = computed(() => [
 const scopeOptions = computed(() => [
   { value: "public", label: t("admin.groups.scope.public") },
   { value: "user_private", label: t("admin.groups.scope.private") },
+  { value: "user_carpool", label: t("carpool.title") },
   { value: "all", label: t("admin.groups.scope.all") },
 ]);
 
@@ -3108,6 +3109,7 @@ const platformOptions = computed(() => [
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
   { value: "grok", label: "Grok" },
+  { value: "custom", label: "Custom" },
 ]);
 
 const platformFilterOptions = computed(() => [
@@ -3117,6 +3119,7 @@ const platformFilterOptions = computed(() => [
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
   { value: "grok", label: "Grok" },
+  { value: "custom", label: "Custom" },
 ]);
 
 const editStatusOptions = computed(() => [
@@ -3712,7 +3715,7 @@ const loadGroups = async () => {
         is_exclusive: filters.is_exclusive
           ? filters.is_exclusive === "true"
           : undefined,
-        scope: filters.scope as "public" | "user_private" | "all",
+        scope: filters.scope as GroupScope | "all",
         search: searchQuery.value.trim() || undefined,
         sort_by: sortState.sort_by,
         sort_order: sortState.sort_order,
@@ -4216,7 +4219,7 @@ const handleClickOutside = (event: MouseEvent) => {
 const openSortModal = async () => {
   try {
     // 获取所有分组（不分页）
-    const allGroups = await adminAPI.groups.getAll(undefined, filters.scope as "public" | "user_private" | "all");
+    const allGroups = await adminAPI.groups.getAll(undefined, filters.scope as GroupScope | "all");
     // 按 sort_order 排序
     sortableGroups.value = [...allGroups].sort(
       (a, b) => a.sort_order - b.sort_order,

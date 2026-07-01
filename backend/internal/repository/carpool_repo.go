@@ -189,6 +189,55 @@ func (r *carpoolRepository) GetPoolByGroupID(ctx context.Context, groupID int64)
 	return pool, nil
 }
 
+func (r *carpoolRepository) FindActivePoolByUserID(ctx context.Context, userID, excludePoolID int64) (*service.CarpoolPool, error) {
+	return r.findActivePoolByUser(ctx, userID, "", excludePoolID)
+}
+
+func (r *carpoolRepository) FindActivePoolByUserAndPlatform(ctx context.Context, userID int64, platform string) (*service.CarpoolPool, error) {
+	return r.findActivePoolByUser(ctx, userID, service.NormalizeCarpoolPlatform(platform), 0)
+}
+
+func (r *carpoolRepository) findActivePoolByUser(ctx context.Context, userID int64, platform string, excludePoolID int64) (*service.CarpoolPool, error) {
+	if userID <= 0 {
+		return nil, nil
+	}
+	args := []any{userID, excludePoolID}
+	platformClause := ""
+	if platform != "" {
+		args = append(args, platform)
+		platformClause = fmt.Sprintf("AND p.platform = $%d", len(args))
+	}
+	query := fmt.Sprintf(`
+		SELECT
+			p.id, p.owner_user_id, p.group_id, p.invite_code, p.name, p.platform, p.status, p.visibility,
+			p.target_seats, p.duration_days, p.seat_price, p.extra_fee, p.extra_fee_description,
+			p.system_proxy_enabled, p.risk_control_enabled, p.notes,
+			p.total_five_hour_limit_usd, p.total_weekly_limit_usd,
+			p.per_member_five_hour_limit_usd, p.per_member_weekly_limit_usd,
+			p.quota_snapshot_at, p.created_at, p.updated_at
+		FROM carpool_pools p
+		LEFT JOIN carpool_members m ON m.pool_id = p.id
+			AND m.user_id = $1
+			AND m.deleted_at IS NULL
+			AND m.status = 'active'
+		WHERE p.deleted_at IS NULL
+			AND p.status <> 'closed'
+			AND p.id <> $2
+			%s
+			AND (p.owner_user_id = $1 OR m.id IS NOT NULL)
+		ORDER BY p.id DESC
+		LIMIT 1
+	`, platformClause)
+	pool, err := scanCarpoolPool(r.db.QueryRowContext(ctx, query, args...))
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return pool, nil
+}
+
 func (r *carpoolRepository) GetPoolByInviteCode(ctx context.Context, inviteCode string) (*service.CarpoolPool, error) {
 	code := strings.ToUpper(strings.TrimSpace(inviteCode))
 	if code == "" {
@@ -892,6 +941,33 @@ func (r *carpoolRepository) UpdateMemberStatus(ctx context.Context, memberID int
 
 func (r *carpoolRepository) GetRuntimeMemberLimitByGroupAndUser(ctx context.Context, groupID, userID int64, _ time.Time) (*service.CarpoolRuntimeMemberLimit, error) {
 	row := r.db.QueryRowContext(ctx, `
+		WITH target_group AS (
+			SELECT id, owner_user_id, platform, scope
+			FROM groups
+			WHERE id = $1 AND deleted_at IS NULL
+		),
+		target_pool AS (
+			SELECT p.id
+			FROM carpool_pools p
+			CROSS JOIN target_group g
+			LEFT JOIN carpool_members visible_member ON visible_member.pool_id = p.id
+				AND visible_member.user_id = $2
+				AND visible_member.deleted_at IS NULL
+				AND visible_member.status = 'active'
+			WHERE p.deleted_at IS NULL
+				AND p.status <> 'closed'
+				AND (
+					p.group_id = g.id
+					OR (
+						g.scope = 'user_carpool'
+						AND g.owner_user_id = $2
+						AND p.platform = g.platform
+						AND (p.owner_user_id = $2 OR visible_member.id IS NOT NULL)
+					)
+				)
+			ORDER BY p.id DESC
+			LIMIT 1
+		)
 		SELECT
 			m.pool_id,
 			m.id,
@@ -901,11 +977,9 @@ func (r *carpoolRepository) GetRuntimeMemberLimitByGroupAndUser(ctx context.Cont
 			m.weekly_limit_usd,
 			COALESCE(us.weekly_usage_usd, 0)
 		FROM carpool_members m
-		INNER JOIN carpool_pools p ON p.id = m.pool_id
+		INNER JOIN target_pool p ON p.id = m.pool_id
 		LEFT JOIN user_subscriptions us ON us.id = m.subscription_id AND us.deleted_at IS NULL
-		WHERE p.group_id = $1
-			AND m.user_id = $2
-			AND p.deleted_at IS NULL
+		WHERE m.user_id = $2
 			AND m.deleted_at IS NULL
 			AND m.status = 'active'
 		LIMIT 1
@@ -923,6 +997,51 @@ func (r *carpoolRepository) GetRuntimeMemberLimitByGroupAndUser(ctx context.Cont
 		out.FiveHourWindowStart = &windowStart.Time
 	}
 	return &out, nil
+}
+
+func (r *carpoolRepository) ListPoolMemberUsageStatsByPoolID(ctx context.Context, poolID int64, userIDs []int64) (map[int64]service.CarpoolMemberUsageStats, error) {
+	out := make(map[int64]service.CarpoolMemberUsageStats, len(userIDs))
+	if poolID <= 0 || len(userIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.db.QueryContext(ctx, `
+		WITH member_scope AS (
+			SELECT
+				m.user_id,
+				m.subscription_id,
+				p.group_id AS legacy_group_id
+			FROM carpool_members m
+			INNER JOIN carpool_pools p ON p.id = m.pool_id
+			WHERE m.pool_id = $1
+				AND m.user_id = ANY($2)
+				AND m.deleted_at IS NULL
+		)
+		SELECT
+			ms.user_id,
+			COALESCE(SUM(COALESCE(ul.input_tokens, 0) + COALESCE(ul.output_tokens, 0) + COALESCE(ul.cache_creation_tokens, 0) + COALESCE(ul.cache_read_tokens, 0)), 0) AS total_tokens,
+			COALESCE(SUM(COALESCE(ul.actual_cost, 0)), 0) AS total_cost_usd
+		FROM member_scope ms
+		LEFT JOIN usage_logs ul ON ul.user_id = ms.user_id
+			AND (
+				(ms.subscription_id IS NOT NULL AND ul.subscription_id = ms.subscription_id)
+				OR (ms.legacy_group_id IS NOT NULL AND ul.group_id = ms.legacy_group_id)
+			)
+		GROUP BY ms.user_id
+	`, poolID, pq.Array(userIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var userID int64
+		var stats service.CarpoolMemberUsageStats
+		if err := rows.Scan(&userID, &stats.TotalTokens, &stats.TotalCostUSD); err != nil {
+			return nil, err
+		}
+		out[userID] = stats
+	}
+	return out, rows.Err()
 }
 
 func (r *carpoolRepository) ListPoolApplicantUsageStats(ctx context.Context, poolID int64) (map[int64]service.CarpoolApplicantUsageStats, error) {

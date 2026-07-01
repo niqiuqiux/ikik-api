@@ -566,7 +566,7 @@ export interface PaginationConfig {
 export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok' | 'custom'
 
 export type SubscriptionType = 'standard' | 'subscription'
-export type GroupScope = 'public' | 'user_private'
+export type GroupScope = 'public' | 'user_private' | 'user_carpool'
 
 export interface OpenAIMessagesDispatchModelConfig {
   opus_mapped_model?: string

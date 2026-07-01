@@ -13,13 +13,23 @@ type carpoolSchedulingAccess struct {
 	AccountIDs map[int64]struct{}
 }
 
+type carpoolActivePoolByUserPlatformFinder interface {
+	FindActivePoolByUserAndPlatform(ctx context.Context, userID int64, platform string) (*CarpoolPool, error)
+}
+
 func resolveCarpoolSchedulingAccess(ctx context.Context, repo CarpoolRepository, groupID *int64) (*carpoolSchedulingAccess, bool, error) {
 	if repo == nil || groupID == nil || *groupID <= 0 {
 		return nil, false, nil
 	}
 	pool, err := repo.GetPoolByGroupID(ctx, *groupID)
 	if errors.Is(err, ErrCarpoolPoolNotFound) {
-		return nil, false, nil
+		if !isUserCarpoolRequestGroup(ctx, *groupID) {
+			return nil, false, nil
+		}
+		pool, err = resolveUserCarpoolSchedulingPool(ctx, repo, *groupID)
+		if errors.Is(err, ErrCarpoolPoolNotFound) {
+			return nil, true, nil
+		}
 	}
 	if err != nil {
 		return nil, true, err
@@ -64,6 +74,34 @@ func resolveCarpoolSchedulingAccess(ctx context.Context, repo CarpoolRepository,
 		}
 	}
 	return access, true, nil
+}
+
+func isUserCarpoolRequestGroup(ctx context.Context, groupID int64) bool {
+	group := GroupFromContext(ctx)
+	return group != nil && group.ID == groupID && group.IsUserCarpoolScope()
+}
+
+func resolveUserCarpoolSchedulingPool(ctx context.Context, repo CarpoolRepository, groupID int64) (*CarpoolPool, error) {
+	group := GroupFromContext(ctx)
+	if group == nil || group.ID != groupID || !group.IsUserCarpoolScope() {
+		return nil, ErrCarpoolPoolNotFound
+	}
+	userID := AuthenticatedUserIDFromContext(ctx)
+	if userID <= 0 || group.OwnerUserID == nil || *group.OwnerUserID != userID {
+		return nil, ErrCarpoolPoolNotFound
+	}
+	finder, ok := repo.(carpoolActivePoolByUserPlatformFinder)
+	if !ok {
+		return nil, ErrServiceUnavailable
+	}
+	pool, err := finder.FindActivePoolByUserAndPlatform(ctx, userID, group.Platform)
+	if err != nil {
+		return nil, err
+	}
+	if pool == nil {
+		return nil, ErrCarpoolPoolNotFound
+	}
+	return pool, nil
 }
 
 func filterCarpoolSchedulingAccounts(ctx context.Context, repo CarpoolRepository, groupID *int64, accounts []Account) ([]Account, bool, error) {

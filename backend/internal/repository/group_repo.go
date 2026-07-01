@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/lib/pq"
 	dbent "ikik-api/ent"
 	"ikik-api/ent/apikey"
 	"ikik-api/ent/apikeygrouproute"
@@ -16,7 +17,6 @@ import (
 	"ikik-api/internal/pkg/logger"
 	"ikik-api/internal/pkg/pagination"
 	"ikik-api/internal/service"
-	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -118,11 +118,19 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 }
 
 func (r *groupRepository) FindUserPrivateByOwnerAndPlatform(ctx context.Context, userID int64, platform string) (*service.Group, error) {
+	return r.findUserScopedByOwnerAndPlatform(ctx, userID, platform, service.GroupScopeUserPrivate)
+}
+
+func (r *groupRepository) FindUserCarpoolByOwnerAndPlatform(ctx context.Context, userID int64, platform string) (*service.Group, error) {
+	return r.findUserScopedByOwnerAndPlatform(ctx, userID, platform, service.GroupScopeUserCarpool)
+}
+
+func (r *groupRepository) findUserScopedByOwnerAndPlatform(ctx context.Context, userID int64, platform, scope string) (*service.Group, error) {
 	m, err := r.client.Group.Query().
 		Where(
 			group.OwnerUserIDEQ(userID),
 			group.PlatformEQ(strings.ToLower(strings.TrimSpace(platform))),
-			group.ScopeEQ(service.GroupScopeUserPrivate),
+			group.ScopeEQ(service.NormalizeGroupScope(scope)),
 		).
 		Only(ctx)
 	if err != nil {
@@ -275,6 +283,8 @@ func (r *groupRepository) ListWithScopeFilters(ctx context.Context, params pagin
 	case "", "all":
 	case service.GroupScopeUserPrivate:
 		q = q.Where(group.ScopeEQ(service.GroupScopeUserPrivate))
+	case service.GroupScopeUserCarpool:
+		q = q.Where(group.ScopeEQ(service.GroupScopeUserCarpool))
 	default:
 		q = q.Where(group.ScopeEQ(service.GroupScopePublic))
 	}
@@ -467,6 +477,10 @@ func (r *groupRepository) ListActiveVisibleToUser(ctx context.Context, userID in
 		),
 		group.And(
 			group.ScopeEQ(service.GroupScopeUserPrivate),
+			group.OwnerUserIDEQ(userID),
+		),
+		group.And(
+			group.ScopeEQ(service.GroupScopeUserCarpool),
 			group.OwnerUserIDEQ(userID),
 		),
 	}

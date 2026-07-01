@@ -96,6 +96,13 @@ func (g *Group) IsUserPrivateScope() bool {
 	return NormalizeGroupScope(g.Scope) == GroupScopeUserPrivate
 }
 
+func (g *Group) IsUserCarpoolScope() bool {
+	if g == nil {
+		return false
+	}
+	return NormalizeGroupScope(g.Scope) == GroupScopeUserCarpool
+}
+
 func (g *Group) HasDailyLimit() bool {
 	return g.DailyLimitUSD != nil && *g.DailyLimitUSD > 0
 }
@@ -183,6 +190,8 @@ func NormalizeGroupScope(scope string) string {
 	switch strings.ToLower(strings.TrimSpace(scope)) {
 	case GroupScopeUserPrivate:
 		return GroupScopeUserPrivate
+	case GroupScopeUserCarpool:
+		return GroupScopeUserCarpool
 	default:
 		return GroupScopePublic
 	}
@@ -208,7 +217,7 @@ func IsValidRequiredAccountLevel(level string) bool {
 }
 
 func SupportedUserPrivateGroupPlatforms() []string {
-	return []string{PlatformAnthropic, PlatformOpenAI, PlatformGemini, PlatformAntigravity}
+	return []string{PlatformAnthropic, PlatformOpenAI, PlatformGemini, PlatformAntigravity, PlatformGrok, PlatformCustom}
 }
 
 func IsSupportedUserPrivateGroupPlatform(platform string) bool {
@@ -223,4 +232,22 @@ func IsSupportedUserPrivateGroupPlatform(platform string) bool {
 
 func PrivateGroupName(userID int64, platform string) string {
 	return fmt.Sprintf("private-u%d-%s", userID, strings.ToLower(strings.TrimSpace(platform)))
+}
+
+func SupportedUserCarpoolGroupPlatforms() []string {
+	return []string{PlatformAnthropic, PlatformOpenAI, PlatformGemini, PlatformAntigravity}
+}
+
+func IsSupportedUserCarpoolGroupPlatform(platform string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(platform))
+	for _, supported := range SupportedUserCarpoolGroupPlatforms() {
+		if normalized == supported {
+			return true
+		}
+	}
+	return false
+}
+
+func CarpoolUserGroupName(userID int64, platform string) string {
+	return fmt.Sprintf("carpool-u%d-%s", userID, strings.ToLower(strings.TrimSpace(platform)))
 }

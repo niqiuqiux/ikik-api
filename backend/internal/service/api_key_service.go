@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
+	"golang.org/x/sync/singleflight"
 	"ikik-api/internal/config"
 	infraerrors "ikik-api/internal/pkg/errors"
 	"ikik-api/internal/pkg/ip"
 	"ikik-api/internal/pkg/pagination"
 	"ikik-api/internal/pkg/timezone"
-	"github.com/dgraph-io/ristretto"
-	"golang.org/x/sync/singleflight"
 )
 
 var (
@@ -334,7 +334,7 @@ func (s *APIKeyService) canUserBindGroup(ctx context.Context, user *User, group 
 		return true
 	}
 	if group.IsSubscriptionType() {
-		if group.IsUserPrivateScope() && !isGroupOwnedByUser(group, user.ID) {
+		if (group.IsUserPrivateScope() || group.IsUserCarpoolScope()) && !isGroupOwnedByUser(group, user.ID) {
 			return false
 		}
 		_, err := s.userSubRepo.GetActiveByUserIDAndGroupID(ctx, user.ID, group.ID)
@@ -939,7 +939,7 @@ func (s *APIKeyService) canUserBindGroupInternal(user *User, group *Group, subsc
 		return true
 	}
 	if group.IsSubscriptionType() {
-		if group.IsUserPrivateScope() && !isGroupOwnedByUser(group, user.ID) {
+		if (group.IsUserPrivateScope() || group.IsUserCarpoolScope()) && !isGroupOwnedByUser(group, user.ID) {
 			return false
 		}
 		return subscribedGroupIDs[group.ID]

@@ -27,7 +27,7 @@ func IsAccountAllowedForRequestGroup(ctx context.Context, account *Account) bool
 	}
 	group := GroupFromContext(ctx)
 	if group != nil &&
-		group.IsUserPrivateScope() &&
+		(group.IsUserPrivateScope() || group.IsUserCarpoolScope()) &&
 		NormalizeAccountShareMode(account.ShareMode) == AccountShareModePublic {
 		return false
 	}

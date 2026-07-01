@@ -43,6 +43,7 @@ var (
 	ErrCarpoolPoolFull               = infraerrors.Conflict("CARPOOL_POOL_FULL", "carpool pool is already full")
 	ErrCarpoolAlreadyApplied         = infraerrors.Conflict("CARPOOL_ALREADY_APPLIED", "you already have a pending carpool application")
 	ErrCarpoolAlreadyMember          = infraerrors.Conflict("CARPOOL_ALREADY_MEMBER", "you are already a member of this carpool pool")
+	ErrCarpoolUserAlreadyInPool      = infraerrors.Conflict("CARPOOL_USER_ALREADY_IN_POOL", "you already have an active carpool pool")
 	ErrCarpoolSelfJoinNotAllowed     = infraerrors.BadRequest("CARPOOL_SELF_JOIN_NOT_ALLOWED", "pool owner cannot apply to their own carpool pool")
 	ErrCarpoolJoinRequestReviewed    = infraerrors.Conflict("CARPOOL_JOIN_REQUEST_REVIEWED", "carpool join request has already been reviewed")
 	ErrCarpoolJoinRequestNotApproved = infraerrors.BadRequest("CARPOOL_JOIN_REQUEST_NOT_APPROVED", "carpool join request must be approved before activating the member")

@@ -50,6 +50,7 @@ const (
 	PlatformGemini      = domain.PlatformGemini
 	PlatformAntigravity = domain.PlatformAntigravity
 	PlatformGrok        = domain.PlatformGrok
+	PlatformCustom      = domain.PlatformCustom
 )
 
 // Account type constants
@@ -94,6 +95,7 @@ const (
 const (
 	GroupScopePublic      = domain.GroupScopePublic
 	GroupScopeUserPrivate = domain.GroupScopeUserPrivate
+	GroupScopeUserCarpool = domain.GroupScopeUserCarpool
 )
 
 // Subscription status constants

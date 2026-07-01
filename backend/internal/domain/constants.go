@@ -23,6 +23,7 @@ const (
 	PlatformGemini      = "gemini"
 	PlatformAntigravity = "antigravity"
 	PlatformGrok        = "grok"
+	PlatformCustom      = "custom"
 )
 
 // Account type constants
@@ -76,6 +77,7 @@ const (
 const (
 	GroupScopePublic      = "public"
 	GroupScopeUserPrivate = "user_private"
+	GroupScopeUserCarpool = "user_carpool"
 )
 
 // Subscription status constants
