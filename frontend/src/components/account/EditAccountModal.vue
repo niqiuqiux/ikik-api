@@ -1449,6 +1449,25 @@
         </div>
       </div>
 
+      <!-- Anthropic API Key 认证方式 -->
+      <div
+        v-if="account?.platform === 'anthropic' && account?.type === 'apikey'"
+        class="border-t border-gray-200 pt-4 dark:border-dark-600"
+      >
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <label class="input-label mb-0">{{ t('admin.accounts.anthropic.apiKeyAuthScheme') }}</label>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ t('admin.accounts.anthropic.apiKeyAuthSchemeDesc') }}
+            </p>
+          </div>
+          <select v-model="anthropicAPIKeyAuthScheme" class="input w-full text-sm sm:w-52">
+            <option value="x_api_key">{{ t('admin.accounts.anthropic.apiKeyAuthSchemeXApiKey') }}</option>
+            <option value="authorization_bearer">{{ t('admin.accounts.anthropic.apiKeyAuthSchemeBearer') }}</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Anthropic API Key: Web Search Emulation (hidden when global disabled) -->
       <div
         v-if="account?.platform === 'anthropic' && account?.type === 'apikey' && webSearchGlobalEnabled"
@@ -2421,6 +2440,11 @@ const umqModeOptions = computed(() => [
   { value: 'throttle', label: t('admin.accounts.quotaControl.rpmLimit.umqModeThrottle') },
   { value: 'serialize', label: t('admin.accounts.quotaControl.rpmLimit.umqModeSerialize') },
 ])
+type AnthropicAPIKeyAuthScheme = 'x_api_key' | 'authorization_bearer'
+
+const ANTHROPIC_API_KEY_AUTH_SCHEME_X_API_KEY: AnthropicAPIKeyAuthScheme = 'x_api_key'
+const ANTHROPIC_API_KEY_AUTH_SCHEME_AUTHORIZATION_BEARER: AnthropicAPIKeyAuthScheme = 'authorization_bearer'
+
 const tlsFingerprintEnabled = ref(false)
 const tlsFingerprintProfileId = ref<number | null>(null)
 const tlsFingerprintProfiles = ref<{ id: number; name: string }[]>([])
@@ -2437,6 +2461,7 @@ const openaiOAuthResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OFF
 const openaiAPIKeyResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OFF)
 const codexCLIOnlyEnabled = ref(false)
 const anthropicPassthroughEnabled = ref(false)
+const anthropicAPIKeyAuthScheme = ref<AnthropicAPIKeyAuthScheme>(ANTHROPIC_API_KEY_AUTH_SCHEME_X_API_KEY)
 const webSearchEmulationMode = ref('default')
 const webSearchGlobalEnabled = ref(false)
 const {
@@ -2769,6 +2794,7 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   openaiAPIKeyResponsesWebSocketV2Mode.value = OPENAI_WS_MODE_OFF
   codexCLIOnlyEnabled.value = false
   anthropicPassthroughEnabled.value = false
+  anthropicAPIKeyAuthScheme.value = ANTHROPIC_API_KEY_AUTH_SCHEME_X_API_KEY
   webSearchEmulationMode.value = 'default'
   if (newAccount.platform === 'openai' && (newAccount.type === 'oauth' || newAccount.type === 'apikey')) {
     if (isUserScope.value) {
@@ -2805,6 +2831,10 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   }
   if (newAccount.platform === 'anthropic' && newAccount.type === 'apikey') {
     anthropicPassthroughEnabled.value = extra?.anthropic_passthrough === true
+    anthropicAPIKeyAuthScheme.value =
+      extra?.anthropic_apikey_auth_scheme === ANTHROPIC_API_KEY_AUTH_SCHEME_AUTHORIZATION_BEARER
+        ? ANTHROPIC_API_KEY_AUTH_SCHEME_AUTHORIZATION_BEARER
+        : ANTHROPIC_API_KEY_AUTH_SCHEME_X_API_KEY
     // 三态：string "default"/"enabled"/"disabled"，向后兼容旧 bool
     const wsVal = extra?.web_search_emulation
     if (wsVal === 'enabled' || wsVal === 'disabled') {
@@ -3978,6 +4008,11 @@ const handleSubmit = async () => {
         newExtra.anthropic_passthrough = true
       } else {
         delete newExtra.anthropic_passthrough
+      }
+      if (anthropicAPIKeyAuthScheme.value === ANTHROPIC_API_KEY_AUTH_SCHEME_AUTHORIZATION_BEARER) {
+        newExtra.anthropic_apikey_auth_scheme = ANTHROPIC_API_KEY_AUTH_SCHEME_AUTHORIZATION_BEARER
+      } else {
+        delete newExtra.anthropic_apikey_auth_scheme
       }
       if (webSearchEmulationMode.value === 'default') {
         delete newExtra.web_search_emulation

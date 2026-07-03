@@ -2383,6 +2383,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 			promptCacheKey = strings.TrimSpace(v)
 		}
 	}
+	isCompactRequest := isOpenAIResponsesCompactPath(c)
 
 	// Track if body needs re-serialization
 	bodyModified := false
@@ -2404,18 +2405,18 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		markPatchSet("instructions", instructions)
 	}
 
-	if isCodexCLI && ensureOpenAIResponsesImageGenerationTool(reqBody) {
+	if !isCompactRequest && isCodexCLI && ensureOpenAIResponsesImageGenerationTool(reqBody) {
 		bodyModified = true
 		disablePatch()
 		logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Injected /responses image_generation tool for Codex client")
 	}
 
-	if normalizeOpenAIResponsesImageGenerationTools(reqBody) {
+	if !isCompactRequest && normalizeOpenAIResponsesImageGenerationTools(reqBody) {
 		bodyModified = true
 		disablePatch()
 		logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Normalized /responses image_generation tool payload")
 	}
-	if isCodexCLI && applyCodexImageGenerationBridgeInstructions(reqBody) {
+	if !isCompactRequest && isCodexCLI && applyCodexImageGenerationBridgeInstructions(reqBody) {
 		bodyModified = true
 		disablePatch()
 		logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Added Codex image_generation bridge instructions")
@@ -2480,7 +2481,6 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 	}
 
 	// Compact-only model 閺勭姴鐨犻敍姘矌閸?/responses/compact 鐠侯垰绶為悽鐔告櫏閿涘奔绗栨导妯哄帥缁狙囩彯娴?	// OAuth 濡€崇€风憴鍕瘱閸栨牭绱欓柆鍨帳 OAuth 鐟欏嫯瀵栭崠鏍洬閻?compact-only 閼奉亜鐣炬稊澶嬆侀崹瀣剁礆閵?
-	isCompactRequest := isOpenAIResponsesCompactPath(c)
 	compactMapped := false
 	if isCompactRequest {
 		compactMappedModel := resolveOpenAICompactForwardModel(account, billingModel)

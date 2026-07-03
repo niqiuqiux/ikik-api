@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"ikik-api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
+	"ikik-api/internal/pkg/pagination"
 )
 
 type apiKeyAvailableGroupsUserRepoStub struct {
@@ -161,6 +161,9 @@ func (s *apiKeyAvailableGroupsSubRepoStub) Create(context.Context, *UserSubscrip
 func (s *apiKeyAvailableGroupsSubRepoStub) GetByID(context.Context, int64) (*UserSubscription, error) {
 	panic("unexpected GetByID call")
 }
+func (s *apiKeyAvailableGroupsSubRepoStub) GetByIDIncludeDeleted(context.Context, int64) (*UserSubscription, error) {
+	panic("unexpected GetByIDIncludeDeleted call")
+}
 func (s *apiKeyAvailableGroupsSubRepoStub) GetByUserIDAndGroupID(context.Context, int64, int64) (*UserSubscription, error) {
 	panic("unexpected GetByUserIDAndGroupID call")
 }
@@ -172,6 +175,9 @@ func (s *apiKeyAvailableGroupsSubRepoStub) Update(context.Context, *UserSubscrip
 }
 func (s *apiKeyAvailableGroupsSubRepoStub) Delete(context.Context, int64) error {
 	panic("unexpected Delete call")
+}
+func (s *apiKeyAvailableGroupsSubRepoStub) Restore(context.Context, int64, string) (*UserSubscription, error) {
+	panic("unexpected Restore call")
 }
 func (s *apiKeyAvailableGroupsSubRepoStub) ListByUserID(context.Context, int64) ([]UserSubscription, error) {
 	panic("unexpected ListByUserID call")
@@ -189,6 +195,9 @@ func (s *apiKeyAvailableGroupsSubRepoStub) List(context.Context, pagination.Pagi
 }
 func (s *apiKeyAvailableGroupsSubRepoStub) ExistsByUserIDAndGroupID(context.Context, int64, int64) (bool, error) {
 	panic("unexpected ExistsByUserIDAndGroupID call")
+}
+func (s *apiKeyAvailableGroupsSubRepoStub) ExistsActiveByUserIDAndGroupID(context.Context, int64, int64) (bool, error) {
+	panic("unexpected ExistsActiveByUserIDAndGroupID call")
 }
 func (s *apiKeyAvailableGroupsSubRepoStub) ExtendExpiry(context.Context, int64, time.Time) error {
 	panic("unexpected ExtendExpiry call")

@@ -1803,7 +1803,7 @@ export interface UserSubscription {
   id: number
   user_id: number
   group_id: number
-  status: 'active' | 'expired' | 'revoked'
+  status: 'active' | 'expired' | 'revoked' | 'suspended'
   daily_usage_usd: number
   weekly_usage_usd: number
   monthly_usage_usd: number

@@ -97,7 +97,7 @@ type ChatGPTAccountInfo struct {
 	SubscriptionExpiresAt string // entitlement.expires_at (RFC3339)
 }
 
-const chatGPTAccountsCheckURL = "https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27"
+var chatGPTAccountsCheckURL = "https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27"
 
 // fetchChatGPTAccountInfo calls ChatGPT backend-api to get account info (plan_type, etc.).
 // Used as fallback when id_token doesn't contain these fields (e.g., Mobile RT).
@@ -149,7 +149,9 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 	if orgID != "" {
 		if acctRaw, ok := accounts[orgID]; ok {
 			if acct, ok := acctRaw.(map[string]any); ok {
-				fillAccountInfo(info, acct)
+				if isUsableChatGPTAccountCandidate(acct, time.Now()) {
+					fillAccountInfo(info, acct)
+				}
 			}
 		}
 	}
@@ -164,6 +166,9 @@ func fetchChatGPTAccountInfo(ctx context.Context, clientFactory PrivacyClientFac
 		for _, acctRaw := range accounts {
 			acct, ok := acctRaw.(map[string]any)
 			if !ok {
+				continue
+			}
+			if !isUsableChatGPTAccountCandidate(acct, time.Now()) {
 				continue
 			}
 			planType := extractPlanType(acct)
@@ -222,6 +227,46 @@ func extractPlanType(acct map[string]any) string {
 		}
 	}
 	return ""
+}
+
+func isUsableChatGPTAccountCandidate(acct map[string]any, now time.Time) bool {
+	if acct == nil || hasChatGPTAccountDeactivatedMarker(acct) {
+		return false
+	}
+	if account, ok := acct["account"].(map[string]any); ok && hasChatGPTAccountDeactivatedMarker(account) {
+		return false
+	}
+
+	expiresAt := extractEntitlementExpiresAt(acct)
+	if expiresAt == "" {
+		return true
+	}
+	expiry, err := time.Parse(time.RFC3339, expiresAt)
+	if err != nil {
+		return true
+	}
+	return expiry.After(now)
+}
+
+func hasChatGPTAccountDeactivatedMarker(obj map[string]any) bool {
+	for _, key := range []string{"deactivated", "is_deactivated", "disabled", "is_disabled"} {
+		if value, ok := obj[key].(bool); ok && value {
+			return true
+		}
+	}
+	for _, key := range []string{"deactivated_at", "disabled_at", "deleted_at"} {
+		if value, ok := obj[key].(string); ok && strings.TrimSpace(value) != "" {
+			return true
+		}
+	}
+	for _, key := range []string{"status", "state"} {
+		value, _ := obj[key].(string)
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "deactivated", "disabled", "deleted", "inactive", "suspended":
+			return true
+		}
+	}
+	return false
 }
 
 // extractEntitlementExpiresAt 从 entitlement 中提取 expires_at。

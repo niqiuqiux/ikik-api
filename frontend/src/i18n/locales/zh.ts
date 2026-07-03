@@ -1450,7 +1450,22 @@ export default {
     exportExcelSuccess: '使用数据导出成功（Excel格式）',
     exportExcelFailed: '使用数据导出失败',
     imageUnit: '张',
-    userAgent: 'User-Agent'
+    userAgent: 'User-Agent',
+    ipGeo: {
+      fetch: '获取地区',
+      fetching: '获取中...',
+      failed: '获取失败',
+      private: '内网地址',
+      refreshTitle: '刷新地区信息',
+      batchFetch: '批量获取地区',
+      batchFetching: '获取中...',
+      pending: '{count} 个 IP 待获取地区',
+      batchFailed: '批量获取地区信息失败',
+      detailOrg: '运营商',
+      detailTimezone: '时区',
+      detailAccuracy: '定位精度',
+      detailCoordinates: '坐标'
+    }
   },
 
   // Shared keys for channel monitor (admin + user views)
@@ -3347,6 +3362,7 @@ export default {
       editGroup: '编辑分组',
       deleteGroup: '删除分组',
       sortOrder: '排序',
+      columnSettings: '列设置',
       sortOrderHint: '拖拽分组调整显示顺序，排在前面的分组会优先显示',
       sortOrderUpdated: '排序已更新',
       failedToUpdateSortOrder: '更新排序失败',
@@ -3917,6 +3933,7 @@ export default {
       assignSubscription: '分配订阅',
       adjustSubscription: '调整订阅',
       revokeSubscription: '撤销订阅',
+      restoreSubscription: '恢复订阅',
       allStatus: '全部状态',
       allGroups: '全部分组',
       allPlatforms: '全部平台',
@@ -3936,7 +3953,8 @@ export default {
       status: {
         active: '生效中',
         expired: '已过期',
-        revoked: '已撤销'
+        revoked: '已撤销',
+        suspended: '已暂停'
       },
       columns: {
         user: '用户',
@@ -3965,6 +3983,7 @@ export default {
       adjust: '调整',
       adjusting: '调整中...',
       revoke: '撤销',
+      restore: '恢复',
       resetQuota: '重置配额',
       resetQuotaTitle: '重置用量配额',
       resetQuotaConfirm: "确定要重置 '{user}' 的每日、每周和每月用量配额吗？用量将归零并从今天开始重新计算。",
@@ -3975,16 +3994,19 @@ export default {
       subscriptionAssigned: '订阅分配成功',
       subscriptionAdjusted: '订阅调整成功',
       subscriptionRevoked: '订阅撤销成功',
+      subscriptionRestored: '订阅恢复成功',
       failedToLoad: '加载订阅列表失败',
       failedToAssign: '分配订阅失败',
       failedToAdjust: '调整订阅失败',
       failedToRevoke: '撤销订阅失败',
+      failedToRestore: '恢复订阅失败',
       adjustWouldExpire: '调整后剩余天数必须大于0',
       adjustOutOfRange: '调整天数必须在 -36500 到 36500 之间',
       pleaseSelectUser: '请选择用户',
       pleaseSelectGroup: '请选择分组',
       validityDaysRequired: '请输入有效的天数（至少1天）',
-      revokeConfirm: "确定要撤销 '{user}' 的订阅吗？此操作无法撤销。",
+      revokeConfirm: "确定要撤销 '{user}' 的订阅吗？之后可以在已撤销列表中恢复。",
+      restoreConfirm: "确定要恢复 '{user}' 的订阅吗？如果原订阅已过期，会恢复为已过期状态。",
       guide: {
         title: '订阅管理教程',
         subtitle: '订阅模式允许你按时间周期为用户分配使用额度，支持日/周/月配额限制。按照以下步骤即可完成配置。',
@@ -4011,7 +4033,7 @@ export default {
           resetQuota: '重置配额',
           resetQuotaDesc: '将日/周/月用量归零，重新开始计算',
           revoke: '撤销',
-          revokeDesc: '立即终止该用户的订阅，不可恢复'
+          revokeDesc: '立即终止该用户的订阅，之后可在已撤销列表中恢复'
         },
         tip: '提示：订阅分组下拉列表中只会显示计费类型为「订阅」且状态为「正常」的分组。如果没有可选项，请先到分组管理中创建。'
       }
@@ -4644,6 +4666,10 @@ export default {
       anthropic: {
         apiKeyPassthrough: '自动透传（仅替换认证）',
         apiKeyPassthroughDesc: '仅对 Anthropic API Key 生效。开启后，messages/count_tokens 请求将透传上游并仅替换认证，保留计费/并发/审计及必要安全过滤；关闭即可回滚到现有兼容链路。',
+        apiKeyAuthScheme: 'API Key 认证方式',
+        apiKeyAuthSchemeDesc: '选择上游 Anthropic API Key 的认证头。默认使用 x-api-key；部分兼容服务需要 Authorization: Bearer。',
+        apiKeyAuthSchemeXApiKey: 'x-api-key',
+        apiKeyAuthSchemeBearer: 'Authorization Bearer',
         webSearchEmulation: 'Web Search 模拟',
         webSearchEmulationDesc: '为该 API Key 账号启用 web search 模拟。客户端发送纯 web_search 请求时，由网关调用第三方搜索 API 并构造响应返回。默认跟随渠道配置。',
         webSearchDefault: '默认',
