@@ -13,9 +13,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -38,48 +36,6 @@ const (
 	testClaudeAPIURL   = "https://api.anthropic.com/v1/messages?beta=true"
 	chatgptCodexAPIURL = "https://chatgpt.com/backend-api/codex/responses"
 )
-
-type UpstreamModelSyncErrorKind string
-
-const (
-	UpstreamModelSyncErrorConfiguration UpstreamModelSyncErrorKind = "configuration"
-	UpstreamModelSyncErrorUnsupported   UpstreamModelSyncErrorKind = "unsupported"
-	UpstreamModelSyncErrorUpstream      UpstreamModelSyncErrorKind = "upstream"
-)
-
-type UpstreamModelSyncError struct {
-	Kind    UpstreamModelSyncErrorKind
-	Message string
-	Err     error
-}
-
-func (e *UpstreamModelSyncError) Error() string {
-	if e == nil {
-		return ""
-	}
-	if e.Err != nil {
-		return e.Message + ": " + e.Err.Error()
-	}
-	return e.Message
-}
-
-func (e *UpstreamModelSyncError) Unwrap() error {
-	if e == nil {
-		return nil
-	}
-	return e.Err
-}
-
-func (e *UpstreamModelSyncError) SafeMessage() string {
-	if e == nil || strings.TrimSpace(e.Message) == "" {
-		return "Failed to sync upstream models"
-	}
-	return e.Message
-}
-
-func newUpstreamModelSyncError(kind UpstreamModelSyncErrorKind, message string, err error) *UpstreamModelSyncError {
-	return &UpstreamModelSyncError{Kind: kind, Message: message, Err: err}
-}
 
 // TestEvent represents a SSE event for account testing
 type TestEvent struct {
@@ -117,7 +73,6 @@ type AccountTestService struct {
 	httpUpstream              HTTPUpstream
 	cfg                       *config.Config
 	tlsFPProfileService       *TLSFingerprintProfileService
-	settingService            *SettingService
 }
 
 // NewAccountTestService creates a new AccountTestService
@@ -129,7 +84,6 @@ func NewAccountTestService(
 	httpUpstream HTTPUpstream,
 	cfg *config.Config,
 	tlsFPProfileService *TLSFingerprintProfileService,
-	settingService *SettingService,
 ) *AccountTestService {
 	return &AccountTestService{
 		accountRepo:               accountRepo,
@@ -139,7 +93,6 @@ func NewAccountTestService(
 		httpUpstream:              httpUpstream,
 		cfg:                       cfg,
 		tlsFPProfileService:       tlsFPProfileService,
-		settingService:            settingService,
 	}
 }
 
@@ -150,12 +103,8 @@ func (s *AccountTestService) validateUpstreamBaseURL(raw string) (string, error)
 	if !s.cfg.Security.URLAllowlist.Enabled {
 		return urlvalidator.ValidateURLFormat(raw, s.cfg.Security.URLAllowlist.AllowInsecureHTTP)
 	}
-	allowedHosts, err := upstreamAllowlistHosts(context.Background(), s.cfg, s.settingService)
-	if err != nil {
-		return "", err
-	}
 	normalized, err := urlvalidator.ValidateHTTPSURL(raw, urlvalidator.ValidationOptions{
-		AllowedHosts:     allowedHosts,
+		AllowedHosts:     s.cfg.Security.URLAllowlist.UpstreamHosts,
 		RequireAllowlist: true,
 		AllowPrivate:     s.cfg.Security.URLAllowlist.AllowPrivateHosts,
 	})
@@ -163,215 +112,6 @@ func (s *AccountTestService) validateUpstreamBaseURL(raw string) (string, error)
 		return "", err
 	}
 	return normalized, nil
-}
-
-// FetchUpstreamSupportedModels requests the upstream model list with account credentials.
-// It is used by the create-account flow before an account has been persisted.
-func (s *AccountTestService) FetchUpstreamSupportedModels(ctx context.Context, account *Account) ([]string, error) {
-	if account == nil {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorConfiguration, "Account is required", nil)
-	}
-	if strings.TrimSpace(account.Type) != AccountTypeAPIKey {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorUnsupported, "Only API key accounts support upstream model sync", nil)
-	}
-
-	apiKey := strings.TrimSpace(account.GetCredential("api_key"))
-	if apiKey == "" {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorConfiguration, "API key is required", nil)
-	}
-
-	baseURL := upstreamModelSyncDefaultBaseURL(account.Platform, strings.TrimSpace(account.GetCredential("base_url")))
-	if baseURL == "" {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorUnsupported, "Unsupported platform for upstream model sync", nil)
-	}
-	normalizedBaseURL, err := s.validateUpstreamBaseURL(baseURL)
-	if err != nil {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorConfiguration, "Invalid base URL", err)
-	}
-
-	modelURL := buildUpstreamModelsURL(account.Platform, normalizedBaseURL, apiKey)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, modelURL, nil)
-	if err != nil {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorConfiguration, "Failed to create upstream model request", err)
-	}
-	applyUpstreamModelsAuthHeaders(req, account.Platform, apiKey)
-
-	var resp *http.Response
-	if s.httpUpstream != nil {
-		if s.tlsFPProfileService != nil {
-			resp, err = s.httpUpstream.DoWithTLS(req, "", account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
-		} else {
-			resp, err = s.httpUpstream.DoWithTLS(req, "", account.ID, account.Concurrency, nil)
-		}
-	} else {
-		resp, err = http.DefaultClient.Do(req)
-	}
-	if err != nil {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorUpstream, "Failed to request upstream models", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
-	if readErr != nil {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorUpstream, "Failed to read upstream model response", readErr)
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, newUpstreamModelSyncError(
-			UpstreamModelSyncErrorUpstream,
-			fmt.Sprintf("Upstream models API returned %d", resp.StatusCode),
-			nil,
-		)
-	}
-
-	models, err := extractUpstreamModelIDs(body)
-	if err != nil {
-		return nil, newUpstreamModelSyncError(UpstreamModelSyncErrorUpstream, "Failed to parse upstream models", err)
-	}
-	return models, nil
-}
-
-func upstreamModelSyncDefaultBaseURL(platform, baseURL string) string {
-	if baseURL != "" {
-		return baseURL
-	}
-	switch strings.ToLower(strings.TrimSpace(platform)) {
-	case PlatformAnthropic:
-		return "https://api.anthropic.com"
-	case PlatformOpenAI:
-		return "https://api.openai.com"
-	case PlatformGemini:
-		return "https://generativelanguage.googleapis.com"
-	case PlatformAntigravity:
-		return "https://generativelanguage.googleapis.com"
-	default:
-		return ""
-	}
-}
-
-func buildUpstreamModelsURL(platform, baseURL, apiKey string) string {
-	switch strings.ToLower(strings.TrimSpace(platform)) {
-	case PlatformOpenAI, PlatformAntigravity:
-		return buildModelsEndpointURL(baseURL, "v1")
-	case PlatformGemini:
-		u := buildModelsEndpointURL(baseURL, "v1beta")
-		parsed, err := url.Parse(u)
-		if err != nil {
-			return u
-		}
-		q := parsed.Query()
-		if q.Get("key") == "" {
-			q.Set("key", apiKey)
-		}
-		parsed.RawQuery = q.Encode()
-		return parsed.String()
-	default:
-		return buildModelsEndpointURL(baseURL, "v1")
-	}
-}
-
-func buildModelsEndpointURL(baseURL, version string) string {
-	normalized := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	if normalized == "" {
-		return "/" + version + "/models"
-	}
-	if strings.HasSuffix(normalized, "/models") {
-		return normalized
-	}
-	lastSlash := strings.LastIndex(normalized, "/")
-	lastSegment := normalized
-	if lastSlash >= 0 {
-		lastSegment = normalized[lastSlash+1:]
-	}
-	if lastSegment == version {
-		return normalized + "/models"
-	}
-	return normalized + "/" + version + "/models"
-}
-
-func applyUpstreamModelsAuthHeaders(req *http.Request, platform, apiKey string) {
-	req.Header.Set("Accept", "application/json")
-	switch strings.ToLower(strings.TrimSpace(platform)) {
-	case PlatformAnthropic:
-		req.Header.Set("x-api-key", apiKey)
-		req.Header.Set("anthropic-version", "2023-06-01")
-	case PlatformGemini:
-		// Gemini API keys are sent as query params.
-	default:
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-	}
-}
-
-func extractUpstreamModelIDs(body []byte) ([]string, error) {
-	var payload struct {
-		Data []struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-		} `json:"data"`
-		Models []struct {
-			ID                         string   `json:"id"`
-			Name                       string   `json:"name"`
-			SupportedGenerationMethods []string `json:"supportedGenerationMethods"`
-		} `json:"models"`
-	}
-	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, err
-	}
-
-	seen := make(map[string]struct{})
-	var models []string
-	add := func(raw string) {
-		model := normalizeUpstreamModelID(raw)
-		if model == "" {
-			return
-		}
-		key := strings.ToLower(model)
-		if _, exists := seen[key]; exists {
-			return
-		}
-		seen[key] = struct{}{}
-		models = append(models, model)
-	}
-
-	for _, item := range payload.Data {
-		if item.ID != "" {
-			add(item.ID)
-		} else {
-			add(item.Name)
-		}
-	}
-	for _, item := range payload.Models {
-		if len(item.SupportedGenerationMethods) > 0 && !supportsGeminiGeneration(item.SupportedGenerationMethods) {
-			continue
-		}
-		if item.ID != "" {
-			add(item.ID)
-		} else {
-			add(item.Name)
-		}
-	}
-	sort.Strings(models)
-	return models, nil
-}
-
-func normalizeUpstreamModelID(raw string) string {
-	model := strings.TrimSpace(raw)
-	if model == "" {
-		return ""
-	}
-	if idx := strings.LastIndex(model, "/"); idx >= 0 && idx < len(model)-1 {
-		model = model[idx+1:]
-	}
-	return strings.TrimSpace(model)
-}
-
-func supportsGeminiGeneration(methods []string) bool {
-	for _, method := range methods {
-		switch strings.ToLower(strings.TrimSpace(method)) {
-		case "generatecontent", "streamgeneratecontent":
-			return true
-		}
-	}
-	return false
 }
 
 // generateSessionString generates a Claude Code style session string.

@@ -209,7 +209,7 @@ const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => isAdmin.value ? '/admin/dashboard' : '/dashboard')
 const userInitial = computed(() => authStore.user?.email?.charAt(0).toUpperCase() || '')
 const publicBaseUrl = computed(() => {
-  if (typeof window === 'undefined') return 'https://ikik.net'
+  if (typeof window === 'undefined') return ''
   return window.location.origin
 })
 

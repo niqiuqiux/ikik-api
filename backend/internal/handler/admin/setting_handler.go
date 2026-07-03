@@ -180,7 +180,6 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		RegistrationEnabled:                       settings.RegistrationEnabled,
 		EmailVerifyEnabled:                        settings.EmailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist:          settings.RegistrationEmailSuffixWhitelist,
-		UpstreamURLAllowlistExtraHosts:            settings.UpstreamURLAllowlistExtraHosts,
 		PromoCodeEnabled:                          settings.PromoCodeEnabled,
 		PasswordResetEnabled:                      settings.PasswordResetEnabled,
 		FrontendURL:                               settings.FrontendURL,
@@ -201,6 +200,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		TurnstileEnabled:                          settings.TurnstileEnabled,
 		TurnstileSiteKey:                          settings.TurnstileSiteKey,
 		TurnstileSecretKeyConfigured:              settings.TurnstileSecretKeyConfigured,
+		APIKeyACLTrustForwardedIP:                 settings.APIKeyACLTrustForwardedIP,
 		LinuxDoConnectEnabled:                     settings.LinuxDoConnectEnabled,
 		LinuxDoConnectClientID:                    settings.LinuxDoConnectClientID,
 		LinuxDoConnectClientSecretConfigured:      settings.LinuxDoConnectClientSecretConfigured,
@@ -435,7 +435,6 @@ type UpdateSettingsRequest struct {
 	RegistrationEnabled              bool                         `json:"registration_enabled"`
 	EmailVerifyEnabled               bool                         `json:"email_verify_enabled"`
 	RegistrationEmailSuffixWhitelist []string                     `json:"registration_email_suffix_whitelist"`
-	UpstreamURLAllowlistExtraHosts   []string                     `json:"upstream_url_allowlist_extra_hosts"`
 	PromoCodeEnabled                 bool                         `json:"promo_code_enabled"`
 	PasswordResetEnabled             bool                         `json:"password_reset_enabled"`
 	FrontendURL                      string                       `json:"frontend_url"`
@@ -459,6 +458,9 @@ type UpdateSettingsRequest struct {
 	TurnstileEnabled   bool   `json:"turnstile_enabled"`
 	TurnstileSiteKey   string `json:"turnstile_site_key"`
 	TurnstileSecretKey string `json:"turnstile_secret_key"`
+
+	// API Key IP 访问控制设置
+	APIKeyACLTrustForwardedIP *bool `json:"api_key_acl_trust_forwarded_ip"`
 
 	// LinuxDo Connect OAuth 登录
 	LinuxDoConnectEnabled      bool   `json:"linuxdo_connect_enabled"`
@@ -736,11 +738,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	// 验证参数
-	if _, err := service.NormalizeUpstreamURLAllowlistExtraHosts(req.UpstreamURLAllowlistExtraHosts); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
 	if req.DefaultConcurrency < 1 {
 		req.DefaultConcurrency = 1
 	}
@@ -1384,17 +1381,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		RegistrationEnabled:              req.RegistrationEnabled,
 		EmailVerifyEnabled:               req.EmailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist: req.RegistrationEmailSuffixWhitelist,
-		UpstreamURLAllowlistExtraHosts: func() []string {
-			if fieldProvided(providedFields, "upstream_url_allowlist_extra_hosts") {
-				return req.UpstreamURLAllowlistExtraHosts
-			}
-			return previousSettings.UpstreamURLAllowlistExtraHosts
-		}(),
-		PromoCodeEnabled:      req.PromoCodeEnabled,
-		PasswordResetEnabled:  req.PasswordResetEnabled,
-		FrontendURL:           req.FrontendURL,
-		InvitationCodeEnabled: req.InvitationCodeEnabled,
-		TotpEnabled:           req.TotpEnabled,
+		PromoCodeEnabled:                 req.PromoCodeEnabled,
+		PasswordResetEnabled:             req.PasswordResetEnabled,
+		FrontendURL:                      req.FrontendURL,
+		InvitationCodeEnabled:            req.InvitationCodeEnabled,
+		TotpEnabled:                      req.TotpEnabled,
 		LoginAgreementEnabled: func() bool {
 			if req.LoginAgreementEnabled != nil {
 				return *req.LoginAgreementEnabled
@@ -1419,16 +1410,22 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.LoginAgreementDocuments
 		}(),
-		SMTPHost:                         req.SMTPHost,
-		SMTPPort:                         req.SMTPPort,
-		SMTPUsername:                     req.SMTPUsername,
-		SMTPPassword:                     req.SMTPPassword,
-		SMTPFrom:                         req.SMTPFrom,
-		SMTPFromName:                     req.SMTPFromName,
-		SMTPUseTLS:                       req.SMTPUseTLS,
-		TurnstileEnabled:                 req.TurnstileEnabled,
-		TurnstileSiteKey:                 req.TurnstileSiteKey,
-		TurnstileSecretKey:               req.TurnstileSecretKey,
+		SMTPHost:           req.SMTPHost,
+		SMTPPort:           req.SMTPPort,
+		SMTPUsername:       req.SMTPUsername,
+		SMTPPassword:       req.SMTPPassword,
+		SMTPFrom:           req.SMTPFrom,
+		SMTPFromName:       req.SMTPFromName,
+		SMTPUseTLS:         req.SMTPUseTLS,
+		TurnstileEnabled:   req.TurnstileEnabled,
+		TurnstileSiteKey:   req.TurnstileSiteKey,
+		TurnstileSecretKey: req.TurnstileSecretKey,
+		APIKeyACLTrustForwardedIP: func() bool {
+			if req.APIKeyACLTrustForwardedIP != nil {
+				return *req.APIKeyACLTrustForwardedIP
+			}
+			return previousSettings.APIKeyACLTrustForwardedIP
+		}(),
 		LinuxDoConnectEnabled:            req.LinuxDoConnectEnabled,
 		LinuxDoConnectClientID:           req.LinuxDoConnectClientID,
 		LinuxDoConnectClientSecret:       req.LinuxDoConnectClientSecret,
@@ -1886,7 +1883,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		RegistrationEnabled:                       updatedSettings.RegistrationEnabled,
 		EmailVerifyEnabled:                        updatedSettings.EmailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist:          updatedSettings.RegistrationEmailSuffixWhitelist,
-		UpstreamURLAllowlistExtraHosts:            updatedSettings.UpstreamURLAllowlistExtraHosts,
 		PromoCodeEnabled:                          updatedSettings.PromoCodeEnabled,
 		PasswordResetEnabled:                      updatedSettings.PasswordResetEnabled,
 		FrontendURL:                               updatedSettings.FrontendURL,
@@ -1907,6 +1903,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		TurnstileEnabled:                          updatedSettings.TurnstileEnabled,
 		TurnstileSiteKey:                          updatedSettings.TurnstileSiteKey,
 		TurnstileSecretKeyConfigured:              updatedSettings.TurnstileSecretKeyConfigured,
+		APIKeyACLTrustForwardedIP:                 updatedSettings.APIKeyACLTrustForwardedIP,
 		LinuxDoConnectEnabled:                     updatedSettings.LinuxDoConnectEnabled,
 		LinuxDoConnectClientID:                    updatedSettings.LinuxDoConnectClientID,
 		LinuxDoConnectClientSecretConfigured:      updatedSettings.LinuxDoConnectClientSecretConfigured,
@@ -2145,9 +2142,6 @@ func preserveOmittedUpdateSettingsFields(req *UpdateSettingsRequest, previous *s
 	if !fieldProvided(fields, "registration_email_suffix_whitelist") {
 		req.RegistrationEmailSuffixWhitelist = previous.RegistrationEmailSuffixWhitelist
 	}
-	if !fieldProvided(fields, "upstream_url_allowlist_extra_hosts") {
-		req.UpstreamURLAllowlistExtraHosts = previous.UpstreamURLAllowlistExtraHosts
-	}
 	if !fieldProvided(fields, "promo_code_enabled") {
 		req.PromoCodeEnabled = previous.PromoCodeEnabled
 	}
@@ -2199,6 +2193,9 @@ func preserveOmittedUpdateSettingsFields(req *UpdateSettingsRequest, previous *s
 	}
 	if !fieldProvided(fields, "turnstile_site_key") {
 		req.TurnstileSiteKey = previous.TurnstileSiteKey
+	}
+	if !fieldProvided(fields, "api_key_acl_trust_forwarded_ip") {
+		req.APIKeyACLTrustForwardedIP = &previous.APIKeyACLTrustForwardedIP
 	}
 	if !fieldProvided(fields, "linuxdo_connect_enabled") {
 		req.LinuxDoConnectEnabled = previous.LinuxDoConnectEnabled
@@ -2467,9 +2464,6 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if !equalStringSlice(before.RegistrationEmailSuffixWhitelist, after.RegistrationEmailSuffixWhitelist) {
 		changed = append(changed, "registration_email_suffix_whitelist")
 	}
-	if !equalStringSlice(before.UpstreamURLAllowlistExtraHosts, after.UpstreamURLAllowlistExtraHosts) {
-		changed = append(changed, "upstream_url_allowlist_extra_hosts")
-	}
 	if before.PromoCodeEnabled != after.PromoCodeEnabled {
 		changed = append(changed, "promo_code_enabled")
 	}
@@ -2514,6 +2508,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if req.TurnstileSecretKey != "" {
 		changed = append(changed, "turnstile_secret_key")
+	}
+	if before.APIKeyACLTrustForwardedIP != after.APIKeyACLTrustForwardedIP {
+		changed = append(changed, "api_key_acl_trust_forwarded_ip")
 	}
 	if before.LinuxDoConnectEnabled != after.LinuxDoConnectEnabled {
 		changed = append(changed, "linuxdo_connect_enabled")

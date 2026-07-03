@@ -15,6 +15,18 @@ import type {
 
 // ==================== Dashboard Types ====================
 
+export interface UserDashboardPlatformUsage {
+  platform: string
+  requests: number
+  input_tokens: number
+  output_tokens: number
+  cache_creation_tokens: number
+  cache_read_tokens: number
+  total_tokens: number
+  cost: number
+  actual_cost: number
+}
+
 export interface UserDashboardStats {
   total_api_keys: number
   active_api_keys: number
@@ -34,6 +46,7 @@ export interface UserDashboardStats {
   today_tokens: number
   today_cost: number // 今日标准计费
   today_actual_cost: number // 今日实际扣除
+  today_platforms?: UserDashboardPlatformUsage[]
   average_duration_ms: number
   rpm: number // 近5分钟平均每分钟请求数
   tpm: number // 近5分钟平均每分钟Token数

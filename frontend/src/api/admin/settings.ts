@@ -333,13 +333,13 @@ export interface SystemSettings {
   registration_enabled: boolean;
   email_verify_enabled: boolean;
   registration_email_suffix_whitelist: string[];
-  upstream_url_allowlist_extra_hosts: string[];
   promo_code_enabled: boolean;
   password_reset_enabled: boolean;
   frontend_url: string;
   invitation_code_enabled: boolean;
   totp_enabled: boolean; // TOTP 双因素认证
   totp_encryption_key_configured: boolean; // TOTP 加密密钥是否已配置
+  api_key_acl_trust_forwarded_ip: boolean;
   // Default settings
   login_agreement_enabled: boolean;
   login_agreement_mode: "modal" | "checkbox" | string;
@@ -587,12 +587,12 @@ export interface UpdateSettingsRequest {
   registration_enabled?: boolean;
   email_verify_enabled?: boolean;
   registration_email_suffix_whitelist?: string[];
-  upstream_url_allowlist_extra_hosts?: string[];
   promo_code_enabled?: boolean;
   password_reset_enabled?: boolean;
   frontend_url?: string;
   invitation_code_enabled?: boolean;
   totp_enabled?: boolean; // TOTP 双因素认证
+  api_key_acl_trust_forwarded_ip?: boolean;
   default_balance?: number;
   login_agreement_enabled?: boolean;
   login_agreement_mode?: "modal" | "checkbox" | string;

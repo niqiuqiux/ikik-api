@@ -820,6 +820,8 @@ export default {
     todayRequests: '今日请求',
     todayCost: '今日消费',
     todayTokens: '今日 Token',
+    todayPlatformUsage: '今日平台用量',
+    todayPlatformUsageHint: '按平台拆分今日请求、Token 与实际消费。',
     totalTokens: '累计 Token',
     cacheToday: '今日缓存',
     performance: '性能指标',
@@ -6937,14 +6939,12 @@ export default {
         totpHint: '允许用户使用 Google Authenticator 等应用进行二次验证',
         totpKeyNotConfigured: '请先在环境变量中配置 TOTP_ENCRYPTION_KEY。使用命令 openssl rand -hex 32 生成密钥。'
       },
-      security: {
-        upstreamAllowlist: {
-          title: '上游域名白名单',
-          description: '追加允许作为账号 Base URL 的上游域名。配置文件中的默认白名单仍然保留。',
-          placeholder: 'naiccc.com\n*.naiccc.com',
-          hint: '每行一个域名，支持 *.example.com。不要填写协议、路径、端口或 API Key。',
-          invalid: '上游域名白名单格式不正确，请只填写域名或 *.example.com 通配域名。'
-        }
+      apiKeyAcl: {
+        title: 'API Key IP 访问控制',
+        description: '控制 API Key 白名单和黑名单使用哪个客户端 IP 判断',
+        trustForwardedIp: '信任反代传递的客户端 IP',
+        trustForwardedIpHint:
+          '默认关闭。仅在源站只允许 Cloudflare 或 Nginx 反代访问时开启；开启后 API Key IP 白/黑名单会使用 CF-Connecting-IP、X-Real-IP 或 X-Forwarded-For，与使用记录中的请求 IP 保持一致。'
       },
       turnstile: {
         title: 'Cloudflare Turnstile',

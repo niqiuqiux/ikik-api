@@ -820,6 +820,8 @@ export default {
     todayRequests: 'Today Requests',
     todayCost: 'Today Cost',
     todayTokens: 'Today Tokens',
+    todayPlatformUsage: 'Today Platform Usage',
+    todayPlatformUsageHint: 'Breaks down today’s requests, tokens, and actual spend by platform.',
     totalTokens: 'Total Tokens',
     cacheToday: 'Cache (Today)',
     performance: 'Performance',
@@ -6750,14 +6752,12 @@ export default {
         totpHint: 'Allow users to use authenticator apps like Google Authenticator',
         totpKeyNotConfigured: 'Please configure TOTP_ENCRYPTION_KEY in environment variables first. Generate a key with: openssl rand -hex 32'
       },
-      security: {
-        upstreamAllowlist: {
-          title: 'Upstream Host Allowlist',
-          description: 'Additional hosts allowed as account Base URLs. Hosts from the config file remain allowed.',
-          placeholder: 'naiccc.com\n*.naiccc.com',
-          hint: 'One host per line. Supports *.example.com. Do not include scheme, path, port, or API keys.',
-          invalid: 'Invalid upstream host allowlist. Use plain hosts or *.example.com wildcard hosts only.'
-        }
+      apiKeyAcl: {
+        title: 'API Key IP Access Control',
+        description: 'Choose which client IP source API Key allowlists and denylists should use',
+        trustForwardedIp: 'Trust reverse-proxy client IP',
+        trustForwardedIpHint:
+          'Disabled by default. Enable only when the origin is reachable only through Cloudflare or Nginx reverse proxy. When enabled, API Key IP allowlists and denylists use CF-Connecting-IP, X-Real-IP, or X-Forwarded-For, matching the request IP shown in usage records.'
       },
       turnstile: {
         title: 'Cloudflare Turnstile',

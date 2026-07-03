@@ -6,9 +6,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ikik-api/internal/config"
 	"github.com/stretchr/testify/require"
+	"ikik-api/internal/config"
+	"ikik-api/internal/pkg/tlsfingerprint"
 )
+
+type modelSyncHTTPUpstream struct{}
+
+func (modelSyncHTTPUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+	return http.DefaultClient.Do(req)
+}
+
+func (modelSyncHTTPUpstream) DoWithTLS(req *http.Request, _ string, _ int64, _ int, _ *tlsfingerprint.Profile) (*http.Response, error) {
+	return http.DefaultClient.Do(req)
+}
 
 func TestFetchUpstreamSupportedModelsOpenAICompatible(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +30,7 @@ func TestFetchUpstreamSupportedModelsOpenAICompatible(t *testing.T) {
 	}))
 	defer upstream.Close()
 
-	svc := &AccountTestService{cfg: insecureURLTestConfig()}
+	svc := &AccountTestService{cfg: insecureURLTestConfig(), httpUpstream: modelSyncHTTPUpstream{}}
 	models, err := svc.FetchUpstreamSupportedModels(context.Background(), &Account{
 		Platform: PlatformOpenAI,
 		Type:     AccountTypeAPIKey,
@@ -36,7 +47,7 @@ func TestFetchUpstreamSupportedModelsOpenAICompatible(t *testing.T) {
 func TestFetchUpstreamSupportedModelsGemini(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/v1beta/models", r.URL.Path)
-		require.Equal(t, "gem-key", r.URL.Query().Get("key"))
+		require.Equal(t, "gem-key", r.Header.Get("x-goog-api-key"))
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"models":[
 			{"name":"models/gemini-2.5-pro","supportedGenerationMethods":["generateContent"]},
@@ -45,7 +56,7 @@ func TestFetchUpstreamSupportedModelsGemini(t *testing.T) {
 	}))
 	defer upstream.Close()
 
-	svc := &AccountTestService{cfg: insecureURLTestConfig()}
+	svc := &AccountTestService{cfg: insecureURLTestConfig(), httpUpstream: modelSyncHTTPUpstream{}}
 	models, err := svc.FetchUpstreamSupportedModels(context.Background(), &Account{
 		Platform: PlatformGemini,
 		Type:     AccountTypeAPIKey,
@@ -56,11 +67,11 @@ func TestFetchUpstreamSupportedModelsGemini(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, []string{"gemini-2.5-pro"}, models)
+	require.Equal(t, []string{"gemini-2.5-pro", "text-embedding-004"}, models)
 }
 
 func TestFetchUpstreamSupportedModelsRequiresAPIKey(t *testing.T) {
-	svc := &AccountTestService{cfg: insecureURLTestConfig()}
+	svc := &AccountTestService{cfg: insecureURLTestConfig(), httpUpstream: modelSyncHTTPUpstream{}}
 	_, err := svc.FetchUpstreamSupportedModels(context.Background(), &Account{
 		Platform: PlatformOpenAI,
 		Type:     AccountTypeOAuth,

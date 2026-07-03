@@ -14,6 +14,8 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
+const skipSetupRedirect =
+  import.meta.env.DEV && import.meta.env.VITE_SKIP_SETUP_REDIRECT === 'true'
 
 /**
  * Update favicon dynamically
@@ -93,14 +95,16 @@ onBeforeUnmount(() => {
 
 onMounted(async () => {
   // Check if setup is needed
-  try {
-    const status = await getSetupStatus()
-    if (status.needs_setup && route.path !== '/setup') {
-      router.replace('/setup')
-      return
+  if (!skipSetupRedirect) {
+    try {
+      const status = await getSetupStatus()
+      if (status.needs_setup && route.path !== '/setup') {
+        router.replace('/setup')
+        return
+      }
+    } catch {
+      // If setup endpoint fails, assume normal mode and continue
     }
-  } catch {
-    // If setup endpoint fails, assume normal mode and continue
   }
 
   // Load public settings into appStore (will be cached for other components)

@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"ikik-api/internal/config"
 	infraerrors "ikik-api/internal/pkg/errors"
-	"github.com/stretchr/testify/require"
 )
 
 type settingUpdateRepoStub struct {
@@ -251,47 +251,6 @@ func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Invalid(
 	})
 	require.Error(t, err)
 	require.Equal(t, "INVALID_REGISTRATION_EMAIL_SUFFIX_WHITELIST", infraerrors.Reason(err))
-}
-
-func TestSettingService_UpdateSettings_UpstreamAllowlistExtraHosts_Normalized(t *testing.T) {
-	repo := &settingUpdateRepoStub{}
-	svc := NewSettingService(repo, &config.Config{})
-
-	err := svc.UpdateSettings(context.Background(), &SystemSettings{
-		UpstreamURLAllowlistExtraHosts: []string{" NAICCC.com ", "*.Example.com", "naiccc.com"},
-	})
-	require.NoError(t, err)
-	require.Equal(t, `["naiccc.com","*.example.com"]`, repo.updates[SettingKeyUpstreamURLAllowlistExtraHosts])
-}
-
-func TestSettingService_UpdateSettings_UpstreamAllowlistExtraHosts_Invalid(t *testing.T) {
-	repo := &settingUpdateRepoStub{}
-	svc := NewSettingService(repo, &config.Config{})
-
-	err := svc.UpdateSettings(context.Background(), &SystemSettings{
-		UpstreamURLAllowlistExtraHosts: []string{"https://naiccc.com"},
-	})
-	require.Error(t, err)
-	require.Equal(t, "INVALID_UPSTREAM_URL_ALLOWLIST_EXTRA_HOSTS", infraerrors.Reason(err))
-}
-
-func TestSettingService_GetUpstreamURLAllowlistHosts_MergesConfigAndDB(t *testing.T) {
-	repo := &settingValueRepoStub{
-		values: map[string]string{
-			SettingKeyUpstreamURLAllowlistExtraHosts: `["naiccc.com","*.naiccc.com"]`,
-		},
-	}
-	svc := NewSettingService(repo, &config.Config{
-		Security: config.SecurityConfig{
-			URLAllowlist: config.URLAllowlistConfig{
-				UpstreamHosts: []string{"api.anthropic.com", "naiccc.com"},
-			},
-		},
-	})
-
-	hosts, err := svc.GetUpstreamURLAllowlistHosts(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, []string{"api.anthropic.com", "naiccc.com", "*.naiccc.com"}, hosts)
 }
 
 func TestParseDefaultSubscriptions_NormalizesValues(t *testing.T) {

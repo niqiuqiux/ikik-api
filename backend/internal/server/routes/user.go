@@ -176,6 +176,11 @@ func RegisterUserRoutes(
 			channels.GET("/available", h.AvailableChannel.List)
 		}
 
+		playground := authenticated.Group("/playground")
+		{
+			playground.POST("/chat/completions", h.Playground.ChatCompletions)
+		}
+
 		// 使用记录
 		usage := authenticated.Group("/usage")
 		{

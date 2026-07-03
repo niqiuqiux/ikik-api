@@ -136,6 +136,8 @@ const (
 	SettingKeyTurnstileSiteKey   = "turnstile_site_key"
 	SettingKeyTurnstileSecretKey = "turnstile_secret_key"
 
+	SettingKeyAPIKeyACLTrustForwardedIP = "api_key_acl_trust_forwarded_ip"
+
 	SettingKeyTotpEnabled = "totp_enabled"
 
 	SettingKeyLinuxDoConnectEnabled      = "linuxdo_connect_enabled"
@@ -308,7 +310,6 @@ const (
 	SettingKeyOpenAIFreeAccountRepairEnabled            = "openai_free_account_repair_enabled"
 	SettingKeyOpenAIFreeAccountRepairWeeklyThresholdUSD = "openai_free_account_repair_weekly_threshold_usd"
 	SettingKeyWebSearchEmulationConfig                  = "web_search_emulation_config"
-	SettingKeyUpstreamURLAllowlistExtraHosts            = "upstream_url_allowlist_extra_hosts"
 )
 
 // AdminAPIKeyPrefix is the prefix for admin API keys.
