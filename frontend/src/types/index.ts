@@ -294,6 +294,7 @@ export interface PublicSettings {
   channel_monitor_enabled: boolean
   channel_monitor_default_interval_seconds: number
   available_channels_enabled: boolean
+  free_models_enabled: boolean
   carpool_enabled: boolean
   carpool_base_service_fee_usd: number
   carpool_system_proxy_fee_usd: number

@@ -309,6 +309,9 @@ const loadAvailableModels = async () => {
 }
 
 const getUserDefaultTestModels = (account: Account): ClaudeModel[] => {
+  const mappedModels = getAccountMappedTestModels(account)
+  if (mappedModels.length > 0) return mappedModels
+
   switch (account.platform) {
     case 'openai':
       return [{ id: 'gpt-5.5', type: 'model', display_name: 'gpt-5.5', created_at: '' }]
@@ -320,6 +323,25 @@ const getUserDefaultTestModels = (account: Account): ClaudeModel[] => {
     default:
       return [{ id: 'claude-sonnet-4-5-20250929', type: 'model', display_name: 'Claude Sonnet 4.5', created_at: '' }]
   }
+}
+
+const getAccountMappedTestModels = (account: Account): ClaudeModel[] => {
+  const mapping = account.credentials?.model_mapping
+  if (!mapping || typeof mapping !== 'object' || Array.isArray(mapping)) return []
+
+  return Object.entries(mapping as Record<string, unknown>)
+    .map(([sourceModel, targetModel]) => {
+      const id = sourceModel.trim()
+      if (!id || id === '*') return null
+      const target = typeof targetModel === 'string' ? targetModel.trim() : ''
+      return {
+        id,
+        type: 'model',
+        display_name: target && target !== id ? `${id} -> ${target}` : id,
+        created_at: ''
+      } satisfies ClaudeModel
+    })
+    .filter((model): model is ClaudeModel => model != null)
 }
 
 const resetState = () => {

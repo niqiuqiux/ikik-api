@@ -18,7 +18,7 @@ export default {
       hero: {
         eyebrow: 'ikik',
         title: 'Which model do you want to call today?',
-        lead: '{siteName} puts your models behind one familiar entry point. Create a key, choose a group, then send requests as usual.',
+        lead: 'Account hosting for user-owned accounts, private pools, carpool pools, and shared pools',
         proofAria: 'Platform capabilities',
         proof: {
           openai: 'OpenAI compatible',
@@ -30,7 +30,7 @@ export default {
         client: 'Your request',
         gateway: 'API entry',
         pool: 'Response',
-        apiSurface: 'Send one request. Let ikik handle the rest.',
+        apiSurface: 'Send one request, let ikik handle the rest',
         compatible: 'Online'
       },
       story: {
@@ -71,7 +71,7 @@ export default {
       },
       models: {
         title: 'Users should not need to hunt for models',
-        lead: 'Put common models, personal accounts, custom APIs, and auto routing behind one entry point. Users choose a model; the system sends the request to available resources.',
+        lead: 'Account hosting for user-owned accounts, private pools, carpool pools, and shared pools',
         policy: {
           title: 'Choose how models are used by scenario',
           items: {
@@ -250,27 +250,9 @@ export default {
       button: 'Sign Up Free'
     },
     footer: {
-      kicker: 'Service details',
-      title: '{siteName} service information',
-      description: 'Models, quota, billing, and availability follow the console display. This page keeps the common entry points and service notes close at hand.',
-      infoAria: 'Platform information',
       baseUrlLabel: 'API Base URL',
-      serviceNotice: 'Service status, billing, and available models follow the console display.',
-      cards: {
-        access: {
-          title: 'Unified model gateway',
-          desc: 'Compatible with common OpenAI-style clients and routes GPT, Claude, Gemini, and more through one entry point.'
-        },
-        billing: {
-          title: 'Transparent usage and plans',
-          desc: 'Balance, subscription quotas, and key-level analytics help individuals and teams manage cost.'
-        },
-        reliability: {
-          title: 'Account-pool routing',
-          desc: 'Group-based routing, rate-limit handling, risk controls, and health checks improve continuity.'
-        }
-      },
-      allRightsReserved: 'All rights reserved.'
+      serviceNotice: 'Service status, billing, and available models follow the console display',
+      allRightsReserved: 'All rights reserved'
     }
   },
 
@@ -522,6 +504,7 @@ export default {
     accounts: 'Accounts',
     myAccounts: 'My Accounts',
     accountManagement: 'Account Management',
+    freeModels: 'Free Models',
     carpools: 'Carpool Pools',
     proxies: 'Proxies',
     redeemCodes: 'Redeem Codes',
@@ -1597,8 +1580,126 @@ export default {
       imageOutputPrice: 'Image Output',
       perRequestPrice: 'Per Request',
       intervals: 'Tiered Pricing',
+      rangeMax: 'unlimited',
       unitPerMillion: '/ 1M tokens',
       unitPerRequest: '/ request'
+    }
+  },
+
+  freeModels: {
+    title: 'Free Models',
+    description: 'Connect your own free-model API keys as private accounts.',
+    createTitle: 'Add Free Model',
+    createDescription: 'Enter API keys and model IDs, then save them to your private pool.',
+    provider: 'Provider',
+    providerHint: 'Only your own config is saved.',
+    accountName: 'Account Name',
+    accountNamePlaceholder: '{provider} Free Models',
+    baseUrl: 'Base URL',
+    apiKey: 'API Key',
+    apiKeyPlaceholder: 'Enter your provider API key',
+    apiKeys: 'API Keys',
+    apiKeysPlaceholder: 'One API key per line. Multiple keys can be added at once.',
+    apiKeysHint: 'Each key is saved as a separate private account.',
+    models: 'Model IDs',
+    modelsPlaceholder: 'One model per line, e.g. llama-3.1-8b-instant',
+    modelsHint: 'Available through your private group.',
+    add: 'Add',
+    addWithCount: 'Add {count} keys',
+    adding: 'Adding...',
+    getApiKey: 'Get API key',
+    existingTitle: 'Connected',
+    existingDescription: 'Private groups only.',
+    connected: 'Connected',
+    notConnected: 'Not connected',
+    connect: 'Connect',
+    keyStatus: 'Key Status',
+    modelIds: 'Model IDs',
+    keyCount: '{count} keys',
+    connectedSummary: '{count} keys, {normal} normal, {limited} limited, {error} errors',
+    connectDialogTitle: 'Connect {provider}',
+    statusDialogTitle: '{provider} Key Status',
+    statusDialogDescription: 'Review connected key status.',
+    openKeyPage: 'Get Key',
+    openDocs: 'Docs',
+    fixedBaseUrlHint: 'The provider Base URL is fixed to avoid 502 or 404 caused by a wrong endpoint.',
+    editBaseUrlHint: 'Replace the placeholder before saving.',
+    testAll: 'Test all',
+    noProviderKeys: 'No keys connected for this provider',
+    latencyMs: '{ms} ms',
+    limitedUntil: 'Rate limited until {time}',
+    unavailableUntil: 'Temporarily unavailable until {time}',
+    overloadUntil: 'Overload protection until {time}',
+    modelLimitedUntil: '{model} limited until {time}',
+    emptyTitle: 'No free-model accounts',
+    emptyDescription: 'After you add a provider, it appears here and can also be managed from My Accounts.',
+    modelCount: '{count} models',
+    test: 'Test',
+    testing: 'Testing...',
+    delete: 'Delete',
+    deleteConfirm: 'Delete this free-model account?',
+    createSuccess: 'Free-model account added',
+    createSuccessCount: 'Added {count} free-model accounts',
+    createPartial: '{success} added, {failed} failed: {reason}',
+    createFailed: 'Failed to add free-model account',
+    loadFailed: 'Failed to load free models',
+    deleteSuccess: 'Free-model account deleted',
+    deleteFailed: 'Failed to delete free-model account',
+    testSuccess: 'Connection test passed',
+    testFailed: 'Connection test failed',
+    requireApiKey: 'API key is required',
+    requireBaseUrl: 'Base URL is required',
+    replaceBaseUrlPlaceholder: 'Replace the placeholder in Base URL first',
+    requireModels: 'Enter at least one model ID',
+    status: {
+      active: 'Active',
+      disabled: 'Disabled',
+      error: 'Error',
+      inactive: 'Inactive'
+    },
+    health: {
+      normal: 'Normal',
+      limited: 'Limited',
+      error: 'Error',
+      not_connected: 'Pending'
+    },
+    providers: {
+      groq: 'Groq',
+      cerebras: 'Cerebras',
+      openrouter: 'OpenRouter',
+      github: 'GitHub Models',
+      gemini: 'Google Gemini',
+      cloudflare: 'Cloudflare Workers AI',
+      cohere: 'Cohere',
+      ovh: 'OVH AI Endpoints',
+      mistral: 'Mistral',
+      huggingface: 'HuggingFace Router',
+      zhipu: 'Zhipu GLM',
+      zai: 'Z.AI GLM',
+      qwenIntl: 'Qwen Global',
+      siliconflowGlobal: 'SiliconFlow Global',
+      nvidiaNim: 'NVIDIA NIM',
+      ollama: 'Ollama Cloud',
+      opencode: 'OpenCode Zen'
+    },
+    providerNotes: {
+      groq: 'Low-latency inference for Llama, GPT-OSS, Qwen, and other small to medium models.',
+      cerebras: 'Fast large-model inference for Qwen Coder, Llama 4, GPT-OSS, and related models.',
+      openrouter: 'Aggregates free model routes. Free model IDs usually end with :free.',
+      github: 'GitHub Models endpoint. Model IDs need publisher prefixes.',
+      gemini: 'Gemini OpenAI-compatible endpoint. Quota depends on Google AI Studio.',
+      cloudflare: 'Workers AI compatibility endpoint. Replace the account ID.',
+      cohere: 'Cohere compatibility endpoint. Quota depends on your console account.',
+      ovh: 'OVH compatibility endpoint. Models and quotas depend on AI Endpoints.',
+      mistral: 'Official Mistral endpoint. Experiment/free quota is account-limited.',
+      huggingface: 'HuggingFace Router. Free quota depends on routed providers and your account.',
+      zhipu: 'Zhipu GLM compatible endpoint for GLM Flash models.',
+      zai: 'Z.AI global endpoint with GLM free models by default.',
+      qwenIntl: 'Alibaba Model Studio global endpoint using the Singapore shared domain.',
+      siliconflowGlobal: 'SiliconFlow global endpoint. Models and quotas depend on your console account.',
+      nvidiaNim: 'NVIDIA NIM global endpoint. Quota depends on your Build account.',
+      ollama: 'Ollama Cloud. Free usage is closer to session/GPU-time limits.',
+      opencode: 'OpenCode Zen gateway. Free models may have campaign windows and rate limits.'
     }
   },
 
@@ -3602,6 +3703,7 @@ export default {
         imageOutputPrice: 'Image Output',
         perRequestPrice: 'Per Request',
         intervals: 'Tiered Pricing',
+        rangeMax: 'unlimited',
         unitPerMillion: '/ 1M tokens',
         unitPerRequest: '/ request'
       }
@@ -6619,6 +6721,12 @@ export default {
           configureLink: 'Configure model pricing in Channel Management > Channel Pricing',
           enabled: 'Enable Model Market and Available Channels',
           enabledHint: 'When off, the user sidebar entries for Model Market and Available Channels are hidden and the endpoint returns an empty list.'
+        },
+        freeModels: {
+          title: 'Free Models',
+          description: 'Allow users to connect their own free-model API keys as private accounts. Disabled by default.',
+          enabled: 'Enable Free Models',
+          enabledHint: 'When off, the Free Models user entry is hidden; existing private accounts are preserved.'
         },
         carpool: {
           title: 'Carpool Pools',

@@ -6,17 +6,17 @@
           <!-- Total Requests -->
           <div class="card p-4">
           <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
-              <Icon name="document" size="md" class="text-blue-600 dark:text-blue-400" />
+            <div class="rounded-xl bg-[var(--app-primary-soft)] p-2">
+              <Icon name="document" size="md" class="text-[var(--app-primary)]" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <p class="text-xs font-medium text-[var(--app-muted)]">
                 {{ t('usage.totalRequests') }}
               </p>
-              <p class="text-xl font-bold text-gray-900 dark:text-white">
+              <p class="text-xl font-bold text-[var(--app-text)]">
                 {{ usageStats?.total_requests?.toLocaleString() || '0' }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-xs text-[var(--app-muted)]">
                 {{ t('usage.inSelectedRange') }}
               </p>
             </div>
@@ -26,17 +26,17 @@
         <!-- Total Tokens -->
         <div class="card p-4">
           <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
-              <Icon name="cube" size="md" class="text-amber-600 dark:text-amber-400" />
+            <div class="rounded-xl bg-[var(--app-surface-muted)] p-2">
+              <Icon name="cube" size="md" class="text-[var(--app-muted-strong)]" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <p class="text-xs font-medium text-[var(--app-muted)]">
                 {{ t('usage.totalTokens') }}
               </p>
-              <p class="text-xl font-bold text-gray-900 dark:text-white">
+              <p class="text-xl font-bold text-[var(--app-text)]">
                 {{ formatTokens(usageStats?.total_tokens || 0) }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-xs text-[var(--app-muted)]">
                 {{ t('usage.in') }}: {{ formatTokens(usageStats?.total_input_tokens || 0) }} /
                 {{ t('usage.out') }}: {{ formatTokens(usageStats?.total_output_tokens || 0) }}
               </p>
@@ -47,17 +47,17 @@
         <!-- Total Cost -->
         <div class="card p-4">
           <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
-              <Icon name="dollar" size="md" class="text-green-600 dark:text-green-400" />
+            <div class="rounded-xl bg-[var(--app-primary-soft)] p-2">
+              <Icon name="dollar" size="md" class="text-[var(--app-primary)]" />
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <p class="text-xs font-medium text-[var(--app-muted)]">
                 {{ t('usage.totalCost') }}
               </p>
-              <p class="text-xl font-bold text-green-600 dark:text-green-400">
+              <p class="text-xl font-bold text-[var(--app-primary-hover)]">
                 ${{ (usageStats?.total_actual_cost || 0).toFixed(4) }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-xs text-[var(--app-muted)]">
                 {{ t('usage.actualCost') }} /
                 <span class="line-through">${{ (usageStats?.total_cost || 0).toFixed(4) }}</span>
                 {{ t('usage.standardCost') }}
@@ -69,17 +69,17 @@
         <!-- Average Duration -->
         <div class="card p-4">
           <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
-              <Icon name="clock" size="md" class="text-purple-600 dark:text-purple-400" />
+            <div class="rounded-xl bg-[var(--app-surface-muted)] p-2">
+              <Icon name="clock" size="md" class="text-[var(--app-muted-strong)]" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <p class="text-xs font-medium text-[var(--app-muted)]">
                 {{ t('usage.avgDuration') }}
               </p>
-              <p class="text-xl font-bold text-gray-900 dark:text-white">
+              <p class="text-xl font-bold text-[var(--app-text)]">
                 {{ formatDuration(usageStats?.average_duration_ms || 0) }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.perRequest') }}</p>
+              <p class="text-xs text-[var(--app-muted)]">{{ t('usage.perRequest') }}</p>
             </div>
           </div>
         </div>
@@ -159,29 +159,29 @@
           @sort="handleSort"
         >
           <template #cell-api_key="{ row }">
-            <span class="text-sm text-gray-900 dark:text-white">{{
+            <span class="text-sm text-[var(--app-text)]">{{
               row.api_key?.name || '-'
             }}</span>
           </template>
 
           <template #cell-model="{ value }">
-            <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+            <span class="font-medium text-[var(--app-text)]">{{ value }}</span>
           </template>
 
           <template #cell-reasoning_effort="{ row }">
-            <span class="text-sm text-gray-900 dark:text-white">
+            <span class="text-sm text-[var(--app-text)]">
               {{ formatReasoningEffort(row.reasoning_effort) }}
             </span>
           </template>
 
           <template #cell-reasoning_tokens="{ row }">
-            <span class="text-sm text-gray-900 dark:text-white">
+            <span class="text-sm text-[var(--app-text)]">
               {{ formatReasoningTokens(row.reasoning_tokens) }}
             </span>
           </template>
 
           <template #cell-endpoint="{ row }">
-            <span class="text-sm text-gray-600 dark:text-gray-300 block max-w-[320px] whitespace-normal break-all">
+            <span class="block max-w-[320px] whitespace-normal break-all text-sm text-[var(--app-muted-strong)]">
               {{ formatUsageEndpoints(row) }}
             </span>
           </template>
@@ -205,7 +205,7 @@
           <template #cell-payment_source="{ row }">
             <div class="flex flex-col gap-1 text-xs">
               <span :class="paymentSourceClass(row)">{{ paymentSourceLabel(row) }}</span>
-              <span v-if="walletDeductionText(row)" class="text-gray-500 dark:text-gray-400">{{ walletDeductionText(row) }}</span>
+              <span v-if="walletDeductionText(row)" class="text-[var(--app-muted)]">{{ walletDeductionText(row) }}</span>
             </div>
           </template>
 
@@ -225,8 +225,8 @@
                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ $t('usage.imageUnit') }}</span>
-              <span class="text-gray-400">({{ row.image_size || '2K' }})</span>
+	              <span class="font-medium text-[var(--app-text)]">{{ row.image_count }}{{ $t('usage.imageUnit') }}</span>
+	              <span class="text-[var(--app-muted)]">({{ row.image_size || '2K' }})</span>
             </div>
             <!-- Token 请求 -->
             <div v-else class="flex items-center gap-1.5">
@@ -236,14 +236,14 @@
                   <!-- Input -->
                   <div class="inline-flex items-center gap-1">
                     <Icon name="arrowDown" size="sm" class="text-emerald-500" />
-                    <span class="font-medium text-gray-900 dark:text-white">{{
+	                    <span class="font-medium text-[var(--app-text)]">{{
                       row.input_tokens.toLocaleString()
                     }}</span>
                   </div>
                   <!-- Output -->
                   <div class="inline-flex items-center gap-1">
                     <Icon name="arrowUp" size="sm" class="text-violet-500" />
-                    <span class="font-medium text-gray-900 dark:text-white">{{
+	                    <span class="font-medium text-[var(--app-text)]">{{
                       row.output_tokens.toLocaleString()
                     }}</span>
                   </div>
@@ -284,12 +284,12 @@
                 @mouseleave="hideTokenTooltip"
               >
                 <div
-                  class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-blue-100 dark:bg-gray-700 dark:group-hover:bg-blue-900/50"
+	                  class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-[var(--app-surface-muted)] transition-colors group-hover:bg-[var(--app-primary-soft)]"
                 >
                   <Icon
                     name="infoCircle"
                     size="xs"
-                    class="text-gray-400 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400"
+	                    class="text-[var(--app-muted)] group-hover:text-[var(--app-primary)]"
                   />
                 </div>
               </div>
@@ -302,7 +302,7 @@
                 <span class="font-medium text-green-600 dark:text-green-400">
                   ${{ row.actual_cost.toFixed(6) }}
                 </span>
-                <span v-if="walletDeductionText(row)" class="text-xs text-gray-500 dark:text-gray-400">{{ walletDeductionText(row) }}</span>
+                <span v-if="walletDeductionText(row)" class="text-xs text-[var(--app-muted)]">{{ walletDeductionText(row) }}</span>
               </div>
               <!-- Cost Detail Tooltip -->
               <div
@@ -311,12 +311,12 @@
                 @mouseleave="hideTooltip"
               >
                 <div
-                  class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-blue-100 dark:bg-gray-700 dark:group-hover:bg-blue-900/50"
+	                  class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-[var(--app-surface-muted)] transition-colors group-hover:bg-[var(--app-primary-soft)]"
                 >
                   <Icon
                     name="infoCircle"
                     size="xs"
-                    class="text-gray-400 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400"
+	                    class="text-[var(--app-muted)] group-hover:text-[var(--app-primary)]"
                   />
                 </div>
               </div>
@@ -326,28 +326,28 @@
           <template #cell-first_token="{ row }">
             <span
               v-if="row.first_token_ms != null"
-              class="text-sm text-gray-600 dark:text-gray-400"
+              class="text-sm text-[var(--app-muted-strong)]"
             >
               {{ formatDuration(row.first_token_ms) }}
             </span>
-            <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
+            <span v-else class="text-sm text-[var(--app-muted)]">-</span>
           </template>
 
           <template #cell-duration="{ row }">
-            <span class="text-sm text-gray-600 dark:text-gray-400">{{
+            <span class="text-sm text-[var(--app-muted-strong)]">{{
               formatDuration(row.duration_ms)
             }}</span>
           </template>
 
           <template #cell-created_at="{ value }">
-            <span class="text-sm text-gray-600 dark:text-gray-400">{{
+            <span class="text-sm text-[var(--app-muted-strong)]">{{
               formatDateTime(value)
             }}</span>
           </template>
 
           <template #cell-user_agent="{ row }">
-            <span v-if="row.user_agent" class="text-sm text-gray-600 dark:text-gray-400 block max-w-[320px] whitespace-normal break-all" :title="row.user_agent">{{ formatUserAgent(row.user_agent) }}</span>
-            <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
+            <span v-if="row.user_agent" class="block max-w-[320px] whitespace-normal break-all text-sm text-[var(--app-muted-strong)]" :title="row.user_agent">{{ formatUserAgent(row.user_agent) }}</span>
+            <span v-else class="text-sm text-[var(--app-muted)]">-</span>
           </template>
 
           <template #empty>

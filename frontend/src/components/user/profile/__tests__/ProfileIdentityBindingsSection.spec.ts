@@ -270,6 +270,7 @@ describe('ProfileIdentityBindingsSection', () => {
 	      channel_monitor_enabled: true,
 	      channel_monitor_default_interval_seconds: 60,
 	      available_channels_enabled: false,
+	      free_models_enabled: false,
 	      carpool_enabled: false,
 	      carpool_base_service_fee_usd: 75,
 	      carpool_system_proxy_fee_usd: 10,

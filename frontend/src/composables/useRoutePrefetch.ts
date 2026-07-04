@@ -88,6 +88,9 @@ export function useRoutePrefetch(router?: Router) {
     if (route?.meta?.requiresAvailableChannels && !isFeatureFlagEnabled(FeatureFlags.availableChannels)) {
       return null
     }
+    if (route?.meta?.requiresFreeModels && !isFeatureFlagEnabled(FeatureFlags.freeModels)) {
+      return null
+    }
 
     if (route && route.components?.default) {
       const component = route.components.default

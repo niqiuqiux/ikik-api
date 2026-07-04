@@ -2,18 +2,18 @@
   <aside
     class="sidebar"
     :class="[
-      sidebarCollapsed ? 'w-[72px]' : 'w-64',
+      sidebarCollapsed ? 'w-[68px]' : 'w-[268px]',
       { '-translate-x-full lg:translate-x-0': !mobileOpen }
     ]"
   >
     <!-- Logo/Brand -->
     <div class="sidebar-header" :class="{ 'sidebar-header-collapsed': sidebarCollapsed }">
       <!-- Custom Logo or Default Logo -->
-      <div class="sidebar-logo flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-none dark:border-dark-700 dark:bg-dark-900">
+      <div class="sidebar-logo flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] shadow-none">
         <img v-if="settingsLoaded" :src="siteLogo || '/logo.svg'" alt="Logo" class="h-full w-full object-contain" />
       </div>
       <div class="sidebar-brand" :class="{ 'sidebar-brand-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">
-        <span class="sidebar-brand-title text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <span class="sidebar-brand-title text-lg font-semibold text-[var(--app-text)]">
           {{ siteName }}
         </span>
         <!-- Version Badge -->
@@ -332,6 +332,7 @@ const isDark = ref(document.documentElement.classList.contains('dark'))
 
 // Track which parent nav groups are expanded
 const expandedGroups = ref<Set<string>>(new Set())
+const collapsedGroups = ref<Set<string>>(new Set())
 
 // Site settings from appStore (cached, no flicker)
 const siteName = computed(() => appStore.siteName)
@@ -763,6 +764,7 @@ const flagPayment = () => {
   return settings.payment_enabled === true || externalPurchaseEnabled
 }
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
+const flagFreeModels = makeSidebarFlag(FeatureFlags.freeModels)
 const flagCarpool = makeSidebarFlag(FeatureFlags.carpool)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
@@ -855,6 +857,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
       expandOnly: true,
       children: [
         { path: '/accounts', label: t('nav.myAccounts'), icon: MyAccountsIcon, hideInSimpleMode: true },
+        { path: '/accounts/free-models', label: t('nav.freeModels'), icon: ModelLobbyIcon, hideInSimpleMode: true, featureFlag: flagFreeModels },
         { path: '/accounts/carpools', label: t('nav.carpools'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagCarpool },
       ],
     },
@@ -1126,13 +1129,16 @@ function isGroupActive(item: NavItem): boolean {
 }
 
 function isGroupExpanded(item: NavItem): boolean {
+  if (collapsedGroups.value.has(item.path)) return false
   return expandedGroups.value.has(item.path) || isGroupActive(item)
 }
 
 function toggleGroup(item: NavItem) {
-  if (expandedGroups.value.has(item.path)) {
+  if (isGroupExpanded(item)) {
     expandedGroups.value.delete(item.path)
+    collapsedGroups.value.add(item.path)
   } else {
+    collapsedGroups.value.delete(item.path)
     expandedGroups.value.add(item.path)
   }
 }
@@ -1209,8 +1215,8 @@ watch(
 
 .sidebar-header-collapsed {
   gap: 0;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
+  padding-left: 1.125rem;
+  padding-right: 1.125rem;
 }
 
 .sidebar-brand {
@@ -1242,14 +1248,14 @@ watch(
 
 .sidebar-brand :deep(button),
 .sidebar-brand :deep(span.text-xs) {
-  border: 1px solid var(--app-border);
-  background: var(--app-surface-muted);
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--app-muted);
   box-shadow: none;
 }
 
 .sidebar-brand :deep(button:hover) {
-  background: var(--app-surface);
+  background: var(--app-surface-muted);
   color: var(--app-text);
 }
 
@@ -1268,27 +1274,27 @@ watch(
 .sidebar-link-collapsed {
   gap: 0;
   justify-content: center;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
 }
 
 .sidebar-child-group {
-  margin: 0.125rem 0 0.375rem 1.25rem;
-  border-left: 1px solid var(--app-border);
-  padding-left: 0.5rem;
+  margin: 0.125rem 0 0.375rem 0.25rem;
+  border-left: 0;
+  padding-left: 0;
 }
 
 .dark .sidebar-child-group {
-  border-left-color: rgba(244, 239, 231, 0.1);
+  border-left-color: transparent;
 }
 
 .sidebar-footer {
-  border-top: 1px solid rgba(112, 92, 74, 0.08);
-  padding: 0.75rem;
+  border-top: 0;
+  padding: 0.625rem;
 }
 
 .dark .sidebar-footer {
-  border-top-color: rgba(244, 239, 231, 0.07);
+  border-top-color: transparent;
 }
 
 .sidebar-section-title {
@@ -1311,20 +1317,11 @@ watch(
 }
 
 .sidebar-section-title::after {
-  content: '';
-  position: absolute;
-  left: 0.75rem;
-  right: 0.75rem;
-  top: 50%;
-  height: 1px;
-  background: rgba(112, 92, 74, 0.12);
-  opacity: 0;
-  transform: translateY(-50%);
-  transition: opacity 0.18s ease;
+  content: none;
 }
 
 .dark .sidebar-section-title::after {
-  background: rgba(244, 239, 231, 0.1);
+  background: transparent;
 }
 
 .sidebar-section-title-text-collapsed {
@@ -1333,8 +1330,8 @@ watch(
 }
 
 .sidebar-section-title-collapsed::after {
-  opacity: 1;
-  transition-delay: 0.08s;
+  opacity: 0;
+  transition-delay: 0s;
 }
 
 .sidebar-label {

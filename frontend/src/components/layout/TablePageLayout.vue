@@ -47,7 +47,7 @@ onUnmounted(() => {
 /* 桌面端：Flexbox 布局 */
 .table-page-layout {
   @apply flex flex-col gap-5;
-  height: calc(100vh - 64px - 3.5rem);
+  min-height: calc(100vh - 64px - 3.5rem);
 }
 
 .layout-section-fixed {
@@ -55,18 +55,19 @@ onUnmounted(() => {
 }
 
 .layout-section-scrollable {
-  @apply flex-1 min-h-0 flex flex-col;
+  @apply min-h-0;
 }
 
 /* 表格滚动容器 - 增强版表体滚动方案 */
 .table-scroll-container {
-  @apply flex h-full flex-col overflow-hidden rounded-lg border bg-white dark:bg-dark-900;
+  @apply overflow-hidden rounded-2xl;
   border-color: var(--app-border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: transparent;
+  box-shadow: none;
 }
 
 .table-scroll-container :deep(.table-wrapper) {
-  @apply flex-1 overflow-x-auto overflow-y-auto;
+  @apply overflow-x-auto overflow-y-visible;
   /* 确保横向滚动条显示在最底部 */
   scrollbar-gutter: stable;
 }

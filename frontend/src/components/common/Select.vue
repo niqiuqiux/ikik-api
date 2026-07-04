@@ -437,42 +437,38 @@ onUnmounted(() => {
 .select-trigger {
   @apply flex w-full items-center justify-between gap-2;
   @apply rounded-xl px-4 py-2.5 text-sm;
-  @apply transition-all duration-200;
+  @apply transition-colors duration-150;
   @apply focus:outline-none;
   @apply cursor-pointer;
-  background: rgba(255, 250, 243, 0.72);
-  border: 1px solid rgba(112, 92, 74, 0.16);
-  color: #202123;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  color: var(--app-text);
+  box-shadow: none;
 }
 
 .select-trigger:hover {
-  border-color: rgba(112, 92, 74, 0.26);
+  border-color: var(--app-border-strong);
 }
 
 .dark .select-trigger {
-  background: rgba(32, 26, 22, 0.72);
-  border-color: rgba(244, 239, 231, 0.12);
-  color: #ececf1;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-text);
+  box-shadow: none;
 }
 
 .dark .select-trigger:hover {
-  border-color: rgba(244, 239, 231, 0.2);
+  border-color: var(--app-border-strong);
 }
 
 .select-trigger-open {
-  border-color: rgba(143, 77, 53, 0.5);
-  box-shadow:
-    0 0 0 3px rgba(16, 163, 127, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  border-color: rgba(16, 163, 127, 0.62);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.14);
 }
 
 .dark .select-trigger-open {
-  border-color: rgba(226, 174, 140, 0.52);
-  box-shadow:
-    0 0 0 3px rgba(226, 174, 140, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-color: rgba(16, 163, 127, 0.72);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.18);
 }
 
 .select-trigger-error {
@@ -481,11 +477,11 @@ onUnmounted(() => {
 
 .select-trigger-disabled {
   @apply cursor-not-allowed opacity-60;
-  background: rgba(241, 235, 226, 0.72);
+  background: var(--app-surface-muted);
 }
 
 .dark .select-trigger-disabled {
-  background: rgba(27, 21, 18, 0.72);
+  background: var(--app-surface-muted);
 }
 
 .select-value {
@@ -494,11 +490,11 @@ onUnmounted(() => {
 
 .select-icon {
   @apply flex-shrink-0;
-  color: #9b8d7d;
+  color: var(--app-muted);
 }
 
 .dark .select-icon {
-  color: #82766b;
+  color: var(--app-muted);
 }
 </style>
 
@@ -507,9 +503,9 @@ onUnmounted(() => {
   @apply min-w-0;
   @apply rounded-xl;
   @apply overflow-hidden;
-  background: #ffffff;
-  border: 1px solid rgba(112, 92, 74, 0.16);
-  box-shadow: 0 16px 44px rgba(47, 41, 35, 0.16);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.14);
   width: max-content;
   min-width: min(200px, calc(100vw - 1rem));
   max-width: calc(100vw - 1rem);
@@ -517,36 +513,36 @@ onUnmounted(() => {
 }
 
 .dark .select-dropdown-portal {
-  background: #212121;
-  border-color: rgba(244, 239, 231, 0.12);
+  background: var(--app-surface);
+  border-color: var(--app-border);
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.42);
 }
 
 .select-dropdown-portal .select-search {
   @apply flex items-center gap-2 px-3 py-2;
-  border-bottom: 1px solid rgba(112, 92, 74, 0.1);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .dark .select-dropdown-portal .select-search {
-  border-bottom-color: rgba(244, 239, 231, 0.08);
+  border-bottom-color: var(--app-border);
 }
 
 .select-dropdown-portal .select-search-input {
   @apply flex-1 bg-transparent text-sm;
   @apply focus:outline-none;
-  color: #202123;
+  color: var(--app-text);
 }
 
 .select-dropdown-portal .select-search-input::placeholder {
-  color: #aa9d90;
+  color: var(--app-muted);
 }
 
 .dark .select-dropdown-portal .select-search-input {
-  color: #ececf1;
+  color: var(--app-text);
 }
 
 .dark .select-dropdown-portal .select-search-input::placeholder {
-  color: #75695f;
+  color: var(--app-muted);
 }
 
 .select-dropdown-portal .select-options {
@@ -557,40 +553,40 @@ onUnmounted(() => {
   @apply flex min-w-0 max-w-full items-center justify-between gap-2;
   @apply px-4 py-2.5 text-sm;
   @apply cursor-pointer transition-colors duration-150;
-  color: #565869;
+  color: var(--app-muted-strong);
   pointer-events: auto !important;
 }
 
 .select-dropdown-portal .select-option:hover {
-  background: rgba(112, 92, 74, 0.07);
-  color: #202123;
+  background: var(--app-surface-muted);
+  color: var(--app-text);
 }
 
 .dark .select-dropdown-portal .select-option {
-  color: #c5c5d2;
+  color: var(--app-muted-strong);
 }
 
 .dark .select-dropdown-portal .select-option:hover {
-  background: rgba(244, 239, 231, 0.07);
-  color: #ececf1;
+  background: var(--app-surface-muted);
+  color: var(--app-text);
 }
 
 .select-dropdown-portal .select-option-selected {
   background: rgba(16, 163, 127, 0.11);
-  color: #0d8f70;
+  color: var(--app-primary-hover);
 }
 
 .dark .select-dropdown-portal .select-option-selected {
-  background: rgba(226, 174, 140, 0.12);
+  background: rgba(16, 163, 127, 0.16);
   color: #45d09a;
 }
 
 .select-dropdown-portal .select-option-focused {
-  background: rgba(112, 92, 74, 0.09);
+  background: var(--app-surface-muted);
 }
 
 .dark .select-dropdown-portal .select-option-focused {
-  background: rgba(244, 239, 231, 0.09);
+  background: var(--app-surface-muted);
 }
 
 .select-dropdown-portal .select-option-disabled {
@@ -600,23 +596,23 @@ onUnmounted(() => {
 .select-dropdown-portal .select-option-group {
   @apply cursor-default select-none;
   @apply text-[11px] font-bold uppercase tracking-wider;
-  background: rgba(241, 235, 226, 0.72);
-  color: #8a7d70;
+  background: var(--app-surface-muted);
+  color: var(--app-muted);
 }
 
 .select-dropdown-portal .select-option-group:hover {
-  background: rgba(241, 235, 226, 0.72);
-  color: #8a7d70;
+  background: var(--app-surface-muted);
+  color: var(--app-muted);
 }
 
 .dark .select-dropdown-portal .select-option-group {
-  background: rgba(27, 21, 18, 0.72);
-  color: #9f9286;
+  background: var(--app-surface-muted);
+  color: var(--app-muted);
 }
 
 .dark .select-dropdown-portal .select-option-group:hover {
-  background: rgba(27, 21, 18, 0.72);
-  color: #9f9286;
+  background: var(--app-surface-muted);
+  color: var(--app-muted);
 }
 
 .select-dropdown-portal .select-option-label {
@@ -625,11 +621,11 @@ onUnmounted(() => {
 
 .select-dropdown-portal .select-empty {
   @apply px-4 py-8 text-center text-sm;
-  color: #8a7d70;
+  color: var(--app-muted);
 }
 
 .dark .select-dropdown-portal .select-empty {
-  color: #9f9286;
+  color: var(--app-muted);
 }
 
 .select-dropdown-enter-active,

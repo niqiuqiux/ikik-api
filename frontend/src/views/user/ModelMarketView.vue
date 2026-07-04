@@ -8,7 +8,7 @@
               <Icon
                 name="search"
                 size="md"
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-muted)]"
               />
               <input
                 v-model="filters.search"
@@ -40,14 +40,14 @@
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span class="rounded-md bg-gray-100 px-2 py-1 dark:bg-dark-800">
+            <div class="flex flex-wrap items-center gap-2 text-xs text-[var(--app-muted-strong)]">
+              <span class="rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1">
                 {{ t('modelMarket.summary.groups', { count: filteredItems.length }) }}
               </span>
-              <span class="rounded-md bg-gray-100 px-2 py-1 dark:bg-dark-800">
+              <span class="rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1">
                 {{ t('modelMarket.summary.models', { count: filteredModelCount }) }}
               </span>
-              <span class="rounded-md bg-gray-100 px-2 py-1 dark:bg-dark-800">
+              <span class="rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1">
                 {{ t('modelMarket.summary.channels', { count: channels.length }) }}
               </span>
             </div>
@@ -66,24 +66,24 @@
 
       <template #table>
         <div class="space-y-3 md:hidden">
-          <div v-if="loading" class="flex min-h-40 items-center justify-center rounded-lg border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800">
-            <Icon name="refresh" size="lg" class="animate-spin text-gray-400" />
+          <div v-if="loading" class="flex min-h-40 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+            <Icon name="refresh" size="lg" class="animate-spin text-[var(--app-muted)]" />
           </div>
 
-          <div v-else-if="filteredItems.length === 0" class="flex min-h-40 flex-col items-center justify-center rounded-lg border border-gray-200 bg-white px-4 text-center dark:border-dark-700 dark:bg-dark-800">
-            <Icon name="inbox" size="xl" class="mb-3 h-12 w-12 text-gray-400" />
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('modelMarket.empty') }}</p>
+          <div v-else-if="filteredItems.length === 0" class="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 text-center">
+            <Icon name="inbox" size="xl" class="mb-3 h-12 w-12 text-[var(--app-muted)]" />
+            <p class="text-sm text-[var(--app-muted-strong)]">{{ t('modelMarket.empty') }}</p>
           </div>
 
           <template v-else>
             <article
               v-for="item in filteredItems"
               :key="`mobile-${item.group.id}`"
-              class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800"
+              class="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-none"
             >
               <button
                 type="button"
-                class="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-dark-700/60"
+                class="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--app-surface-muted)]"
                 :aria-expanded="isMarketGroupExpanded(item.group.id)"
                 @click="toggleMarketGroup(item.group.id)"
               >
@@ -96,20 +96,20 @@
                     :user-rate-multiplier="userGroupRates[item.group.id] ?? null"
                     always-show-rate
                   />
-                  <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                  <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--app-muted-strong)]">
                     <span
                       :class="[
-                        'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-medium uppercase',
+                        'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-medium',
                         platformBadgeClass(item.platform)
                       ]"
                     >
                       <PlatformIcon :platform="item.platform as GroupPlatform" size="xs" />
                       {{ item.platform }}
                     </span>
-                    <span class="rounded-md bg-gray-100 px-2 py-0.5 dark:bg-dark-700">
+                    <span class="rounded-full bg-[var(--app-surface-muted)] px-2 py-0.5">
                       {{ item.models.length }} {{ t('modelMarket.columns.models') }}
                     </span>
-                    <span class="rounded-md bg-gray-100 px-2 py-0.5 dark:bg-dark-700">
+                    <span class="rounded-full bg-[var(--app-surface-muted)] px-2 py-0.5">
                       {{ item.channels.length }} {{ t('modelMarket.columns.channels') }}
                     </span>
                   </div>
@@ -117,19 +117,19 @@
                 <Icon
                   :name="isMarketGroupExpanded(item.group.id) ? 'chevronUp' : 'chevronDown'"
                   size="sm"
-                  class="mt-1 flex-shrink-0 text-gray-400"
+                  class="mt-1 flex-shrink-0 text-[var(--app-muted)]"
                 />
               </button>
 
               <div
                 v-if="isMarketGroupExpanded(item.group.id)"
-                class="space-y-3 border-t border-gray-100 px-4 py-3 dark:border-dark-700"
+                class="space-y-3 border-t border-[var(--app-border)] px-4 py-3"
               >
                 <div class="flex flex-wrap gap-1.5">
                   <span
                     v-for="channel in item.channels"
                     :key="`mobile-channel-${item.group.id}-${channel.name}`"
-                    class="max-w-full truncate rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-dark-700 dark:text-gray-300"
+                    class="max-w-full truncate rounded-md bg-[var(--app-surface-muted)] px-2 py-1 text-xs text-[var(--app-muted-strong)]"
                     :title="channel.description || channel.name"
                   >
                     {{ channel.name }}
@@ -154,106 +154,89 @@
           </template>
         </div>
 
-        <div class="table-wrapper hidden md:block">
-          <table class="w-full table-fixed border-collapse text-sm">
-            <thead>
-              <tr class="border-b border-gray-100 bg-gray-50/70 text-xs font-medium uppercase tracking-wide text-gray-500 dark:border-dark-700 dark:bg-dark-800/70 dark:text-gray-400">
-                <th class="w-[260px] px-4 py-3 text-left">{{ t('modelMarket.columns.group') }}</th>
-                <th class="w-[140px] px-4 py-3 text-left">{{ t('modelMarket.columns.platform') }}</th>
-                <th class="w-[220px] px-4 py-3 text-left">{{ t('modelMarket.columns.channels') }}</th>
-                <th class="min-w-[320px] px-4 py-3 text-left">{{ t('modelMarket.columns.models') }}</th>
-                <th class="w-[120px] px-4 py-3 text-left">{{ t('modelMarket.columns.pricing') }}</th>
-              </tr>
-            </thead>
+        <div class="hidden md:grid md:gap-3">
+          <div v-if="loading" class="flex min-h-40 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+            <Icon name="refresh" size="lg" class="animate-spin text-[var(--app-muted)]" />
+          </div>
 
-            <tbody v-if="loading">
-              <tr>
-                <td colspan="5" class="py-10 text-center">
-                  <Icon name="refresh" size="lg" class="inline-block animate-spin text-gray-400" />
-                </td>
-              </tr>
-            </tbody>
+          <div v-else-if="filteredItems.length === 0" class="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 text-center">
+            <Icon name="inbox" size="xl" class="mb-3 h-12 w-12 text-[var(--app-muted)]" />
+            <p class="text-sm text-[var(--app-muted-strong)]">{{ t('modelMarket.empty') }}</p>
+          </div>
 
-            <tbody v-else-if="filteredItems.length === 0">
-              <tr>
-                <td colspan="5" class="py-12 text-center">
-                  <Icon name="inbox" size="xl" class="mx-auto mb-3 h-12 w-12 text-gray-400" />
-                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('modelMarket.empty') }}</p>
-                </td>
-              </tr>
-            </tbody>
-
-            <tbody v-else>
-              <tr
-                v-for="item in filteredItems"
-                :key="item.group.id"
-                class="border-b border-gray-100 transition-colors hover:bg-gray-50/50 dark:border-dark-800 dark:hover:bg-dark-800/50"
-              >
-                <td class="px-4 py-3 align-top">
-                  <GroupBadge
-                    :name="item.group.name"
-                    :platform="item.group.platform as GroupPlatform"
-                    :subscription-type="(item.group.subscription_type || 'standard') as SubscriptionType"
-                    :rate-multiplier="item.group.rate_multiplier"
-                    :user-rate-multiplier="userGroupRates[item.group.id] ?? null"
-                    always-show-rate
-                  />
-                </td>
-
-                <td class="px-4 py-3 align-top">
+          <article
+            v-else
+            v-for="item in filteredItems"
+            :key="item.group.id"
+            class="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-4 shadow-none"
+          >
+            <div class="grid gap-4 lg:grid-cols-[minmax(220px,0.8fr)_minmax(180px,0.6fr)_minmax(360px,1.4fr)] lg:items-start">
+              <div class="min-w-0 space-y-2">
+                <GroupBadge
+                  :name="item.group.name"
+                  :platform="item.group.platform as GroupPlatform"
+                  :subscription-type="(item.group.subscription_type || 'standard') as SubscriptionType"
+                  :rate-multiplier="item.group.rate_multiplier"
+                  :user-rate-multiplier="userGroupRates[item.group.id] ?? null"
+                  always-show-rate
+                />
+                <div class="flex flex-wrap items-center gap-2 text-xs text-[var(--app-muted-strong)]">
                   <span
                     :class="[
-                      'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium uppercase',
+                      'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium',
                       platformBadgeClass(item.platform)
                     ]"
                   >
                     <PlatformIcon :platform="item.platform as GroupPlatform" size="xs" />
                     {{ item.platform }}
                   </span>
-                </td>
-
-                <td class="px-4 py-3 align-top">
-                  <div class="flex flex-col gap-1">
-                    <span
-                      v-for="channel in item.channels"
-                      :key="channel.name"
-                      class="truncate text-xs font-medium text-gray-700 dark:text-gray-300"
-                      :title="channel.description || channel.name"
-                    >
-                      {{ channel.name }}
-                    </span>
-                  </div>
-                </td>
-
-                <td class="px-4 py-3 align-top">
-                  <div class="flex flex-wrap gap-1">
-                    <SupportedModelChip
-                      v-for="model in item.models"
-                      :key="`${model.platform}-${model.name}`"
-                      :model="model"
-                      pricing-key-prefix="availableChannels.pricing"
-                      :no-pricing-label="model.pricing_conflict
-                        ? t('modelMarket.pricingVaries')
-                        : t('availableChannels.noPricing')"
-                      :show-platform="false"
-                      :platform-hint="item.platform"
-                    />
-                  </div>
-                </td>
-
-                <td class="px-4 py-3 align-top">
                   <span
-                    class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium"
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
                     :class="item.has_pricing
                       ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                      : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'"
+                      : 'bg-[var(--app-surface-muted)] text-[var(--app-muted-strong)]'"
                   >
                     {{ item.has_pricing ? t('modelMarket.pricingConfigured') : t('availableChannels.noPricing') }}
                   </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+
+              <div class="min-w-0">
+                <div class="mb-2 text-xs font-medium text-[var(--app-muted)]">
+                  {{ t('modelMarket.columns.channels') }}
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="channel in item.channels"
+                    :key="channel.name"
+                    class="max-w-full truncate rounded-md bg-[var(--app-surface-muted)] px-2 py-1 text-xs font-medium text-[var(--app-muted-strong)]"
+                    :title="channel.description || channel.name"
+                  >
+                    {{ channel.name }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="min-w-0">
+                <div class="mb-2 text-xs font-medium text-[var(--app-muted)]">
+                  {{ t('modelMarket.columns.models') }}
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <SupportedModelChip
+                    v-for="model in item.models"
+                    :key="`${model.platform}-${model.name}`"
+                    :model="model"
+                    pricing-key-prefix="availableChannels.pricing"
+                    :no-pricing-label="model.pricing_conflict
+                      ? t('modelMarket.pricingVaries')
+                      : t('availableChannels.noPricing')"
+                    :show-platform="false"
+                    :platform-hint="item.platform"
+                  />
+                </div>
+              </div>
+            </div>
+          </article>
         </div>
       </template>
     </TablePageLayout>

@@ -202,6 +202,7 @@ const (
 	SettingKeyCustomEndpoints                = "custom_endpoints"
 	SettingKeyRiskControlEnabled             = "risk_control_enabled"
 	SettingKeyAutoModelSettings              = "auto_model_settings"
+	SettingKeyFreeModelsEnabled              = "free_models_enabled"
 	SettingKeyCarpoolEnabled                 = "carpool_enabled"
 	SettingKeyCarpoolBaseServiceFeeUSD       = "carpool_base_service_fee_usd"
 	SettingKeyCarpoolSystemProxyFeeUSD       = "carpool_system_proxy_fee_usd"

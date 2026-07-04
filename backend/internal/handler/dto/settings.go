@@ -269,6 +269,9 @@ type SystemSettings struct {
 	// Auto model routing
 	AutoModelSettings AutoModelSettings `json:"auto_model_settings"`
 
+	// Free Models feature switch
+	FreeModelsEnabled bool `json:"free_models_enabled"`
+
 	// Carpool Pools feature switch
 	CarpoolEnabled           bool    `json:"carpool_enabled"`
 	CarpoolBaseServiceFeeUSD float64 `json:"carpool_base_service_fee_usd"`
@@ -339,6 +342,8 @@ type PublicSettings struct {
 	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
 
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+
+	FreeModelsEnabled bool `json:"free_models_enabled"`
 
 	CarpoolEnabled           bool    `json:"carpool_enabled"`
 	CarpoolBaseServiceFeeUSD float64 `json:"carpool_base_service_fee_usd"`

@@ -207,6 +207,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/accounts/free-models',
+    name: 'FreeModels',
+    component: () => import('@/views/user/FreeModelsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Free Models',
+      titleKey: 'freeModels.title',
+      descriptionKey: 'freeModels.description',
+      requiresFreeModels: true
+    }
+  },
+  {
     path: '/accounts/carpools',
     name: 'CarpoolPools',
     component: () => import('@/views/user/CarpoolPoolsView.vue'),
@@ -931,6 +944,20 @@ router.beforeEach(async (to, _from, next) => {
       }
     }
     if (!isFeatureFlagEnabled(FeatureFlags.availableChannels)) {
+      next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
+      return
+    }
+  }
+
+  if (to.meta.requiresFreeModels) {
+    if (!appStore.cachedPublicSettings) {
+      try {
+        await appStore.fetchPublicSettings()
+      } catch (error) {
+        console.error('Failed to load public settings:', error)
+      }
+    }
+    if (!isFeatureFlagEnabled(FeatureFlags.freeModels)) {
       next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
       return
     }

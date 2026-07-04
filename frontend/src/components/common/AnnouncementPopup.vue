@@ -3,13 +3,13 @@
     <Transition name="popup-fade">
       <div
         v-if="announcementStore.currentPopup"
-        class="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4 pt-[8vh] backdrop-blur-md"
+        class="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/45 p-4 pt-[8vh] backdrop-blur-md"
       >
         <div
-          class="w-full max-w-[680px] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-dark-800 dark:ring-white/10"
+          class="w-full max-w-[680px] overflow-hidden rounded-3xl bg-[var(--app-surface)] shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
           @click.stop
         >
-          <div class="relative overflow-hidden border-b border-[#d9d9e3] bg-[#f7f7f8] px-8 py-6 dark:border-[#3f3f46] dark:bg-[#212121]">
+          <div class="relative overflow-hidden border-b border-[var(--app-border)] bg-[var(--app-surface)] px-8 py-6">
             <div class="relative z-10">
               <!-- Icon and badge -->
               <div class="mb-3 flex items-center gap-2">
@@ -18,7 +18,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
                 </div>
-                <span class="inline-flex items-center gap-1.5 rounded-lg bg-[#f0e4d6] px-2.5 py-1 text-xs font-medium text-[#8f4c32] ring-1 ring-[#ddc8b6] dark:bg-[#35261f] dark:text-[#f1c7aa] dark:ring-[#5a4035]">
+                <span class="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-primary-soft)] px-2.5 py-1 text-xs font-medium text-[#0d8f70] ring-1 ring-[#10a37f]/20 dark:bg-[#10a37f]/15 dark:text-[#45d09a] dark:ring-[#10a37f]/25">
                   <span class="relative flex h-2 w-2">
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10a37f] opacity-60"></span>
                     <span class="relative inline-flex h-2 w-2 rounded-full bg-[#10a37f]"></span>
@@ -43,7 +43,7 @@
           </div>
 
           <!-- Body -->
-          <div class="max-h-[50vh] overflow-y-auto bg-white px-8 py-8 dark:bg-dark-800">
+          <div class="max-h-[50vh] overflow-y-auto bg-[var(--app-surface)] px-8 py-8">
             <div class="relative">
               <div class="absolute left-0 top-0 bottom-0 w-1 rounded-full bg-[#10a37f]"></div>
               <div class="pl-6">
@@ -56,7 +56,7 @@
           </div>
 
           <!-- Footer -->
-          <div class="border-t border-[#d9d9e3] bg-[#ffffff] px-8 py-5 dark:border-[#3f3f46] dark:bg-[#212121]">
+          <div class="border-t border-[var(--app-border)] bg-[var(--app-surface)] px-8 py-5">
             <div class="flex items-center justify-end">
               <button
                 @click="handleDismiss"

@@ -18,7 +18,7 @@ export default {
       hero: {
         eyebrow: 'ikik',
         title: '今天想调用哪个模型？',
-        lead: '{siteName} 把常用模型放进同一个入口。创建密钥，选择分组，然后像平时一样发送请求。',
+        lead: '账号托管，支持用户自行使用账号、私有池、拼车池、共享池',
         proofAria: '平台能力',
         proof: {
           openai: 'OpenAI 兼容',
@@ -35,7 +35,7 @@ export default {
       },
       story: {
         title: '一次接入，持续可用',
-        lead: '从个人开发到团队自动化，平台在统一入口后处理模型选择、账号状态、额度变化与调用记录，让服务保持连续可用。',
+        lead: '从个人开发到团队自动化，平台在统一入口后处理模型选择、账号状态、额度变化与调用记录，让服务保持连续可用',
         status: {
           ready: '就绪',
           live: '运行中',
@@ -45,25 +45,25 @@ export default {
         items: {
           gateway: {
             title: '接入方式足够简单',
-            desc: '替换 Base URL，使用平台密钥，即可让现有应用接入多模型能力。',
+            desc: '替换 Base URL，使用平台密钥，即可让现有应用接入多模型能力',
             panel: '统一入口',
             caption: '适配常见 SDK、CLI 与自动化工具'
           },
           routing: {
             title: '稳定性由系统接管',
-            desc: '平台持续感知账号状态与可用额度，在异常、限流或不可用时切换到更合适的资源。',
+            desc: '平台持续感知账号状态与可用额度，在异常、限流或不可用时切换到更合适的资源',
             panel: '智能调度',
             caption: '私有账号、共享池与拼车池统一调度'
           },
           usage: {
             title: '用量和成本看得清楚',
-            desc: 'Token、费用、首字时间与推理消耗都会沉淀为记录，帮助你判断模型是否值得继续使用。',
+            desc: 'Token、费用、首字时间与推理消耗都会沉淀为记录，帮助你判断模型是否值得继续使用',
             panel: '用量分析',
             caption: '消费、速度与稳定性一目了然'
           },
           control: {
             title: '一个 Key 可以只给它该用的范围',
-            desc: '给不同项目创建不同密钥，并限制它能用的分组、模型和额度，避免一个密钥拖垮整个平台余额。',
+            desc: '给不同项目创建不同密钥，并限制它能用的分组、模型和额度，避免一个密钥拖垮整个平台余额',
             panel: '密钥权限',
             caption: '适合团队成员、自动化任务和外部项目'
           }
@@ -71,46 +71,46 @@ export default {
       },
       models: {
         title: '模型不需要用户自己到处找',
-        lead: '把常用模型、私有账号、自定义 API 和自动路由放在同一个入口里。用户选模型，系统负责把请求送到可用资源。',
+        lead: '账号托管，支持用户自行使用账号、私有池、拼车池、共享池',
         policy: {
           title: '你可以按业务决定怎么用模型',
           items: {
             priority: {
               title: '贵模型做关键任务',
-              desc: '例如代码、长文本、复杂推理走高质量模型。'
+              desc: '例如代码、长文本、复杂推理走高质量模型'
             },
             private: {
               title: '私有资源只给自己用',
-              desc: '用户自己的 API Key 和账号默认只进入私有分组。'
+              desc: '用户自己的 API Key 和账号默认只进入私有分组'
             },
             fallback: {
               title: '异常时自动换资源',
-              desc: '账号限流、不可用或额度不足时，系统切到更合适的账号。'
+              desc: '账号限流、不可用或额度不足时，系统切到更合适的账号'
             }
           }
         },
         providers: {
-          openai: '适合推理、代码、自动化和通用对话场景。',
-          claude: '适合长文本、代码协作和高质量写作场景。',
-          gemini: '适合多模态、快速响应和补充模型能力。',
-          custom: '适合接入自有供应商、私有代理和专属业务模型。'
+          openai: '适合推理、代码、自动化和通用对话场景',
+          claude: '适合长文本、代码协作和高质量写作场景',
+          gemini: '适合多模态、快速响应和补充模型能力',
+          custom: '适合接入自有供应商、私有代理和专属业务模型'
         }
       },
       integration: {
         title: '不用重写项目，改配置就能开始用',
-        lead: '保持原来的 OpenAI 风格请求，只把密钥和 Base URL 换成平台提供的入口。',
+        lead: '保持原来的 OpenAI 风格请求，只把密钥和 Base URL 换成平台提供的入口',
         steps: {
           key: {
             title: '创建 API 密钥',
-            desc: '给项目、成员或自动化任务单独创建密钥。'
+            desc: '给项目、成员或自动化任务单独创建密钥'
           },
           group: {
             title: '选择调用分组',
-            desc: '决定这个密钥走平台订阅、私有账号、共享池还是拼车池。'
+            desc: '决定这个密钥走平台订阅、私有账号、共享池还是拼车池'
           },
           baseUrl: {
             title: '替换 Base URL',
-            desc: '把客户端地址改成平台网关，原请求结构可以继续保留。'
+            desc: '把客户端地址改成平台网关，原请求结构可以继续保留'
           }
         }
       },
@@ -125,7 +125,7 @@ export default {
       eyebrow: '开放式 AI 账号协作网络',
       title: '让账号能力在用户之间{flow}',
       titleHighlight: '自由流动',
-      lead: '{siteName}不再只是平台向用户提供服务，而是让个人用户提供账号、其他用户消费额度，平台完成调度中转、收益结算、邀请分成。',
+      lead: '{siteName}不再只是平台向用户提供服务，而是让个人用户提供账号、其他用户消费额度，平台完成调度中转、收益结算、邀请分成',
       viewUsage: '查看用量',
       consoleAria: '账号协作网络数据面板示意'
     },
@@ -191,11 +191,11 @@ export default {
     },
     features: {
       unifiedGateway: '一键接入',
-      unifiedGatewayDesc: '获取一个 API 密钥，即可调用所有已接入的 AI 模型，无需分别申请。',
+      unifiedGatewayDesc: '获取一个 API 密钥，即可调用所有已接入的 AI 模型，无需分别申请',
       multiAccount: '稳定可靠',
-      multiAccountDesc: '智能调度多个上游账号，自动切换和负载均衡，告别频繁报错。',
+      multiAccountDesc: '智能调度多个上游账号，自动切换和负载均衡，告别频繁报错',
       balanceQuota: '用多少付多少',
-      balanceQuotaDesc: '按实际使用量计费，支持设置配额上限，团队用量一目了然。'
+      balanceQuotaDesc: '按实际使用量计费，支持设置配额上限，团队用量一目了然'
     },
     // 优势对比
     comparison: {
@@ -250,27 +250,9 @@ export default {
       button: '免费注册'
     },
     footer: {
-      kicker: '服务信息',
-      title: '{siteName} 的基础信息',
-      description: '模型、额度、计费和可用状态都以控制台为准。这里保留最常用的入口和服务说明。',
-      infoAria: '平台信息',
       baseUrlLabel: 'API Base URL',
-      serviceNotice: '服务状态、计费与可用模型以控制台展示为准。',
-      cards: {
-        access: {
-          title: '统一模型网关',
-          desc: '兼容常见 OpenAI 风格客户端，通过一个入口调度 GPT、Claude、Gemini 等模型。'
-        },
-        billing: {
-          title: '清晰用量与套餐',
-          desc: '余额、订阅额度和密钥级统计帮助个人与团队控制成本。'
-        },
-        reliability: {
-          title: '账号池调度',
-          desc: '分组路由、限流处理、风控和健康检查提升连续可用性。'
-        }
-      },
-      allRightsReserved: '保留所有权利。'
+      serviceNotice: '服务状态、计费与可用模型以控制台展示为准',
+      allRightsReserved: '保留所有权利'
     }
   },
 
@@ -522,6 +504,7 @@ export default {
     accounts: '账号管理',
     myAccounts: '我的账号',
     accountManagement: '账号管理',
+    freeModels: '免费模型',
     carpools: '拼车池',
     proxies: 'IP管理',
     redeemCodes: '兑换码',
@@ -1571,9 +1554,9 @@ export default {
     noModels: '未配置模型',
     noPricing: '未配置定价',
     exclusive: '专属',
-    public: '公开',
+    public: '共享',
     exclusiveTooltip: '管理员授权给你的专属分组',
-    publicTooltip: '对所有用户公开的分组',
+    publicTooltip: '所有用户可用的共享分组',
     groupRates: {
       title: '分组倍率与折算价格',
       intervalMultiplierHint: '先按阶梯价格计算，再应用该分组倍率'
@@ -1597,8 +1580,126 @@ export default {
       imageOutputPrice: '图片输出',
       perRequestPrice: '每次请求',
       intervals: '阶梯定价',
-      unitPerMillion: '/ 1M token',
+      rangeMax: '不限',
+      unitPerMillion: '/ 百万 Token',
       unitPerRequest: '/ 次'
+    }
+  },
+
+  freeModels: {
+    title: '免费模型',
+    description: '接入你自己的免费模型 API Key，保存为私有账号使用。',
+    createTitle: '添加免费模型',
+    createDescription: '填写 API Key 和模型 ID，保存到私有账号池。',
+    provider: '供应商',
+    providerHint: '只保存你自己的配置。',
+    accountName: '账号名称',
+    accountNamePlaceholder: '{provider} 免费模型',
+    baseUrl: 'Base URL',
+    apiKey: 'API Key',
+    apiKeyPlaceholder: '填入你的供应商 API Key',
+    apiKeys: 'API Keys',
+    apiKeysPlaceholder: '每行一个 API Key，可一次添加多个',
+    apiKeysHint: '每个 Key 会创建为一个独立私有账号。',
+    models: '模型 ID',
+    modelsPlaceholder: '每行一个模型，例如 llama-3.1-8b-instant',
+    modelsHint: '创建密钥时可通过私有分组调用。',
+    add: '添加',
+    addWithCount: '添加 {count} 个 Key',
+    adding: '添加中...',
+    getApiKey: '获取 API Key',
+    existingTitle: '已接入',
+    existingDescription: '仅私有分组调度。',
+    connected: '已接入',
+    notConnected: '未接入',
+    connect: '接入',
+    keyStatus: 'Key 状态',
+    modelIds: '模型 ID',
+    keyCount: '{count} 个 Key',
+    connectedSummary: '{count} 个 Key，正常 {normal}，限流 {limited}，错误 {error}',
+    connectDialogTitle: '接入 {provider}',
+    statusDialogTitle: '{provider} Key 状态',
+    statusDialogDescription: '查看已接入 Key 的状态。',
+    openKeyPage: '获取 Key',
+    openDocs: '查看文档',
+    fixedBaseUrlHint: '供应商 Base URL 已固定，避免填错导致 502 或 404。',
+    editBaseUrlHint: '替换占位内容后再保存。',
+    testAll: '全部测试',
+    noProviderKeys: '这个供应商还没有接入 Key',
+    latencyMs: '{ms} ms',
+    limitedUntil: '限流到 {time}',
+    unavailableUntil: '临时不可调度到 {time}',
+    overloadUntil: '过载保护到 {time}',
+    modelLimitedUntil: '{model} 限流到 {time}',
+    emptyTitle: '暂无免费模型账号',
+    emptyDescription: '添加第一个供应商后，它会出现在这里，也能在“我的账号”里继续管理。',
+    modelCount: '{count} 个模型',
+    test: '测试',
+    testing: '测试中...',
+    delete: '删除',
+    deleteConfirm: '确定删除这个免费模型账号吗？',
+    createSuccess: '免费模型账号已添加',
+    createSuccessCount: '已添加 {count} 个免费模型账号',
+    createPartial: '已成功 {success} 个，失败 {failed} 个：{reason}',
+    createFailed: '添加免费模型失败',
+    loadFailed: '加载免费模型失败',
+    deleteSuccess: '免费模型账号已删除',
+    deleteFailed: '删除免费模型失败',
+    testSuccess: '测试通过',
+    testFailed: '测试失败',
+    requireApiKey: '请填写 API Key',
+    requireBaseUrl: '请填写 Base URL',
+    replaceBaseUrlPlaceholder: '请先替换 Base URL 里的占位内容',
+    requireModels: '请至少填写一个模型 ID',
+    status: {
+      active: '正常',
+      disabled: '已停用',
+      error: '错误',
+      inactive: '未启用'
+    },
+    health: {
+      normal: '正常',
+      limited: '限流',
+      error: '错误',
+      not_connected: '待接入'
+    },
+    providers: {
+      groq: 'Groq',
+      cerebras: 'Cerebras',
+      openrouter: 'OpenRouter',
+      github: 'GitHub Models',
+      gemini: 'Google Gemini',
+      cloudflare: 'Cloudflare Workers AI',
+      cohere: 'Cohere',
+      ovh: 'OVH AI Endpoints',
+      mistral: 'Mistral',
+      huggingface: 'HuggingFace Router',
+      zhipu: '智谱 GLM',
+      zai: 'Z.AI GLM',
+      qwenIntl: 'Qwen 国际',
+      siliconflowGlobal: 'SiliconFlow 国际',
+      nvidiaNim: 'NVIDIA NIM',
+      ollama: 'Ollama Cloud',
+      opencode: 'OpenCode Zen'
+    },
+    providerNotes: {
+      groq: '低延迟推理供应商，适合 Llama、GPT-OSS 和 Qwen 等轻量到中型模型。',
+      cerebras: '高速大模型推理供应商，适合 Qwen Coder、Llama 4 和 GPT-OSS 等模型。',
+      openrouter: '聚合多个免费模型路由，模型 ID 通常带 :free 后缀。',
+      github: 'GitHub Models endpoint，模型 ID 需要带发布方前缀。',
+      gemini: 'Gemini OpenAI 兼容接口，额度以 Google AI Studio 为准。',
+      cloudflare: 'Workers AI 兼容接口，需要替换账号 ID。',
+      cohere: 'Cohere 兼容接口，额度以控制台为准。',
+      ovh: 'OVH 兼容端点，模型和额度以 AI Endpoints 为准。',
+      mistral: 'Mistral 官方接口，实验/免费额度通常按账号池规则限制。',
+      huggingface: 'HuggingFace Router，免费额度与具体路由后端和账户额度有关。',
+      zhipu: '智谱 GLM 兼容接口，适合 GLM Flash 系列。',
+      zai: 'Z.AI 国际接口，默认使用 GLM 免费模型。',
+      qwenIntl: '阿里云百炼国际区，默认使用新加坡共享域。',
+      siliconflowGlobal: 'SiliconFlow 国际接口，模型和额度以控制台为准。',
+      nvidiaNim: 'NVIDIA NIM 国际接口，额度以 Build 账号为准。',
+      ollama: 'Ollama Cloud，免费额度更偏会话/GPU 时间限制。',
+      opencode: 'OpenCode Zen 网关，免费模型可能存在活动周期和速率限制。'
     }
   },
 
@@ -3677,7 +3778,8 @@ export default {
         imageOutputPrice: '图片输出',
         perRequestPrice: '每次请求',
         intervals: '阶梯定价',
-        unitPerMillion: '/ 1M token',
+        rangeMax: '不限',
+        unitPerMillion: '/ 百万 Token',
         unitPerRequest: '/ 次'
       }
     },
@@ -6806,6 +6908,12 @@ export default {
           configureLink: '前往 渠道管理 > 渠道定价 配置模型价格',
           enabled: '启用模型广场与可用渠道',
           enabledHint: '关闭后用户端“模型广场”和“可用渠道”入口隐藏，接口返回空数组。'
+        },
+        freeModels: {
+          title: '免费模型',
+          description: '允许用户把自己的免费模型 API Key 接入为私有账号。默认关闭。',
+          enabled: '启用免费模型',
+          enabledHint: '关闭后用户端“免费模型”入口隐藏，已有私有账号不会被删除。'
         },
         carpool: {
           title: '拼车池',

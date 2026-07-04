@@ -1,21 +1,14 @@
 <template>
-  <div
-    class="min-h-screen bg-gray-50 dark:bg-dark-950"
-    :class="{ 'admin-font': useAdminTypography }"
-  >
-    <!-- Sidebar -->
+  <div class="app-shell" :class="{ 'admin-font': useAdminTypography }">
     <AppSidebar />
 
-    <!-- Main Content Area -->
     <div
-      class="relative min-h-screen min-w-0 max-w-full transition-all duration-300"
-      :class="[sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-64']"
+      class="app-workspace"
+      :class="[sidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[268px]']"
     >
-      <!-- Header -->
       <AppHeader />
 
-      <!-- Main Content -->
-      <main class="min-w-0 max-w-full overflow-x-hidden p-4 md:p-6 lg:p-7">
+      <main class="app-main">
         <slot />
       </main>
     </div>
@@ -42,7 +35,7 @@ const useAdminTypography = computed(() => isAdmin.value || route.path.startsWith
 
 const { replayTour } = useOnboardingTour({
   storageKey: isAdmin.value ? 'admin_guide' : 'user_guide',
-  autoStart: true
+  autoStart: false
 })
 
 const onboardingStore = useOnboardingStore()

@@ -80,6 +80,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 
 		AvailableChannelsEnabled: settings.AvailableChannelsEnabled,
+		FreeModelsEnabled:        settings.FreeModelsEnabled,
 
 		CarpoolEnabled:           settings.CarpoolEnabled,
 		CarpoolBaseServiceFeeUSD: settings.CarpoolBaseServiceFeeUSD,

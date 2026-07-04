@@ -105,6 +105,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Available Channels',
   }),
+  freeModels: defineFlag({
+    key: 'free_models_enabled',
+    mode: 'opt-in',
+    label: 'Free Models',
+  }),
   carpool: defineFlag({
     key: 'carpool_enabled',
     mode: 'opt-in',

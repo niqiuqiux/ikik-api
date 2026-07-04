@@ -1,15 +1,15 @@
 <template>
-  <div class="rounded-md border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-900/40">
+  <div class="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
     <button
       type="button"
-      class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-gray-50 dark:hover:bg-dark-800/70"
+      class="flex w-full items-start justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[var(--app-surface-muted)]"
       :aria-expanded="expanded"
       @click="expanded = !expanded"
     >
-      <span class="flex min-w-0 items-center gap-2">
+      <span class="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span
           :class="[
-            'inline-flex min-w-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium',
+          'inline-flex max-w-full items-center gap-1 rounded-lg border px-2 py-0.5 text-xs font-medium',
             badgeClass,
           ]"
         >
@@ -18,24 +18,24 @@
             :platform="effectivePlatform as GroupPlatform"
             size="xs"
           />
-          <span class="truncate">{{ model.name }}</span>
+          <span class="min-w-0 truncate">{{ model.name }}</span>
         </span>
-        <span class="hidden text-[11px] text-gray-500 dark:text-gray-400 sm:inline">
+        <span class="text-[11px] leading-4 text-[var(--app-muted-strong)]">
           {{ priceSummary }}
         </span>
       </span>
       <Icon
         :name="expanded ? 'chevronUp' : 'chevronDown'"
         size="sm"
-        class="flex-shrink-0 text-gray-400"
+        class="flex-shrink-0 text-[var(--app-muted)]"
       />
     </button>
 
     <div
       v-if="expanded"
-      class="space-y-3 border-t border-gray-100 px-3 py-3 dark:border-dark-700"
+      class="space-y-3 border-t border-[var(--app-border)] px-3 py-3"
     >
-      <div v-if="!model.pricing" class="text-xs text-gray-500 dark:text-gray-400">
+      <div v-if="!model.pricing" class="text-xs text-[var(--app-muted-strong)]">
         {{ noPricingLabel }}
       </div>
 
@@ -44,10 +44,10 @@
           <div
             v-for="item in pricingItems"
             :key="item.key"
-            class="rounded-md border border-gray-100 bg-gray-50/70 px-2.5 py-2 dark:border-dark-700 dark:bg-dark-800/50"
+            class="rounded-lg bg-[var(--app-surface-muted)] px-2.5 py-2"
           >
-            <div class="text-[11px] text-gray-500 dark:text-gray-400">{{ item.label }}</div>
-            <div class="mt-1 font-mono text-xs font-semibold text-gray-900 dark:text-gray-100">
+            <div class="text-[11px] text-[var(--app-muted-strong)]">{{ item.label }}</div>
+            <div class="mt-1 font-mono text-xs font-semibold text-[var(--app-text)]">
               {{ item.value }}
             </div>
           </div>
@@ -55,18 +55,18 @@
 
         <div
           v-if="model.pricing.intervals && model.pricing.intervals.length > 0"
-          class="rounded-md border border-gray-100 dark:border-dark-700"
+          class="rounded-xl border border-[var(--app-border)]"
         >
-          <div class="border-b border-gray-100 px-2.5 py-2 text-xs font-medium text-gray-700 dark:border-dark-700 dark:text-gray-300">
+          <div class="border-b border-[var(--app-border)] px-2.5 py-2 text-xs font-medium text-[var(--app-muted-strong)]">
             {{ t(prefixKey('intervals')) }}
           </div>
-          <div class="divide-y divide-gray-100 dark:divide-dark-700">
+          <div class="divide-y divide-[var(--app-border)]">
             <div
               v-for="(iv, idx) in model.pricing.intervals"
               :key="idx"
-              class="grid gap-2 px-2.5 py-2 text-[11px] text-gray-600 dark:text-gray-300 md:grid-cols-[minmax(7rem,1fr)_repeat(4,minmax(6rem,auto))]"
+              class="grid gap-2 px-2.5 py-2 text-[11px] text-[var(--app-muted-strong)] md:grid-cols-[minmax(7rem,1fr)_repeat(4,minmax(6rem,auto))]"
             >
-              <span class="font-medium text-gray-700 dark:text-gray-200">
+              <span class="font-medium text-[var(--app-text)]">
                 <template v-if="iv.tier_label">{{ iv.tier_label }}</template>
                 <template v-else>{{ formatRange(iv.min_tokens, iv.max_tokens) }}</template>
               </span>
@@ -79,11 +79,11 @@
         </div>
       </template>
 
-      <div class="rounded-md border border-gray-100 dark:border-dark-700">
-        <div class="border-b border-gray-100 px-2.5 py-2 text-xs font-medium text-gray-700 dark:border-dark-700 dark:text-gray-300">
+      <div class="rounded-xl border border-[var(--app-border)]">
+        <div class="border-b border-[var(--app-border)] px-2.5 py-2 text-xs font-medium text-[var(--app-muted-strong)]">
           {{ t('availableChannels.groupRates.title') }}
         </div>
-        <div class="divide-y divide-gray-100 dark:divide-dark-700">
+        <div class="divide-y divide-[var(--app-border)]">
           <div
             v-for="group in groups"
             :key="group.id"
@@ -97,14 +97,14 @@
               :user-rate-multiplier="userGroupRates[group.id] ?? null"
               always-show-rate
             />
-            <div class="font-mono text-gray-700 dark:text-gray-200">
+            <div class="font-mono text-[var(--app-text)]">
               {{ effectiveRate(group) }}x
             </div>
-            <div class="min-w-0 text-[11px] text-gray-500 dark:text-gray-400">
+            <div class="min-w-0 text-[11px] text-[var(--app-muted-strong)]">
               {{ effectivePriceSummary(group) }}
             </div>
           </div>
-          <div v-if="groups.length === 0" class="px-2.5 py-2 text-xs text-gray-400">-</div>
+          <div v-if="groups.length === 0" class="px-2.5 py-2 text-xs text-[var(--app-muted)]">-</div>
         </div>
       </div>
     </div>
@@ -146,7 +146,7 @@ const effectivePlatform = computed(() => props.model.platform || props.platformH
 const badgeClass = computed(() =>
   effectivePlatform.value
     ? platformBadgeClass(effectivePlatform.value)
-    : 'border-gray-200 bg-gray-50 text-gray-700 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300',
+    : 'border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-muted-strong)]',
 )
 
 function prefixKey(k: string): string {
@@ -168,7 +168,7 @@ function formatEffectivePrice(value: number | null, scale: number, rate: number)
 }
 
 function formatRange(min: number, max: number | null): string {
-  const maxLabel = max == null ? 'max' : String(max)
+  const maxLabel = max == null ? t(prefixKey('rangeMax')) : String(max)
   return `(${min}, ${maxLabel}]`
 }
 

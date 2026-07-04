@@ -176,6 +176,9 @@ type SystemSettings struct {
 	// Auto model routing
 	AutoModelSettings AutoModelSettings `json:"auto_model_settings"`
 
+	// Free Models feature toggle
+	FreeModelsEnabled bool `json:"free_models_enabled"`
+
 	// Carpool Pools feature toggle
 	CarpoolEnabled           bool    `json:"carpool_enabled"`
 	CarpoolBaseServiceFeeUSD float64 `json:"carpool_base_service_fee_usd"`
@@ -289,6 +292,9 @@ type PublicSettings struct {
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`
+
+	// 免费模型功能开关
+	FreeModelsEnabled bool `json:"free_models_enabled"`
 
 	// 拼车池功能开关
 	CarpoolEnabled           bool    `json:"carpool_enabled"`

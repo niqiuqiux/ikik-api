@@ -56,6 +56,12 @@ declare module 'vue-router' {
     requiresAvailableChannels?: boolean
 
     /**
+     * Whether this route requires Free Models to be enabled
+     * @default false
+     */
+    requiresFreeModels?: boolean
+
+    /**
      * Whether this route requires Carpool Pools to be enabled
      * @default false
      */

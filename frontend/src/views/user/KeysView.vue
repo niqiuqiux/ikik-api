@@ -53,6 +53,7 @@
           :columns="columns"
           :data="apiKeys"
           :loading="loading"
+          :sticky-actions-column="false"
           :server-side-sort="true"
           default-sort-key="created_at"
           default-sort-order="desc"
@@ -65,11 +66,11 @@
               </code>
               <button
                 @click="copyToClipboard(value, row.id)"
-                class="rounded-lg p-1 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700"
+	                class="rounded-lg p-1 transition-colors hover:bg-[var(--app-surface-muted)]"
                 :class="
                   copiedKeyId === row.id
                     ? 'text-green-500'
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+	                    : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
                 "
                 :title="copiedKeyId === row.id ? t('keys.copied') : t('keys.copyToClipboard')"
               >
@@ -86,7 +87,7 @@
 
           <template #cell-name="{ value, row }">
             <div class="flex items-center gap-1.5">
-              <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+	              <span class="font-medium text-[var(--app-text)]">{{ value }}</span>
               <Icon
                 v-if="row.ip_whitelist?.length > 0 || row.ip_blacklist?.length > 0"
                 name="shield"
@@ -102,7 +103,7 @@
               <button
                 :ref="(el) => setGroupButtonRef(row.id, el)"
                 @click="openGroupSelector(row)"
-                class="-mx-2 -my-1 flex min-w-0 max-w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-dark-700"
+	                class="-mx-2 -my-1 flex min-w-0 max-w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--app-surface-muted)]"
                 :title="t('keys.clickToChangeGroup')"
               >
                 <GroupBadge
@@ -114,12 +115,12 @@
                   :user-rate-multiplier="userGroupRates[row.group.id]"
                   class="min-w-0"
                 />
-                <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{
+	                <span v-else class="text-sm text-[var(--app-muted)]">{{
                   t('keys.noGroup')
                 }}</span>
-                <span class="shrink-0 text-xs text-gray-500 dark:text-gray-400">{{ t('keys.selectGroup') }}</span>
+	                <span class="shrink-0 text-xs text-[var(--app-muted)]">{{ t('keys.selectGroup') }}</span>
                 <svg
-                  class="h-3.5 w-3.5 shrink-0 text-gray-400 opacity-60 transition-opacity group-hover/dropdown:opacity-100"
+	                  class="h-3.5 w-3.5 shrink-0 text-[var(--app-muted)] opacity-60 transition-opacity group-hover/dropdown:opacity-100"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -138,31 +139,31 @@
           <template #cell-usage="{ row }">
             <div class="text-sm">
               <div class="flex items-center gap-1.5">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('keys.today') }}:</span>
-                <span class="font-medium text-gray-900 dark:text-white">
+	                <span class="text-[var(--app-muted)]">{{ t('keys.today') }}:</span>
+	                <span class="font-medium text-[var(--app-text)]">
                   ${{ (usageStats[row.id]?.today_actual_cost ?? 0).toFixed(4) }}
                 </span>
               </div>
               <div class="mt-0.5 flex items-center gap-1.5">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('keys.total') }}:</span>
-                <span class="font-medium text-gray-900 dark:text-white">
+	                <span class="text-[var(--app-muted)]">{{ t('keys.total') }}:</span>
+	                <span class="font-medium text-[var(--app-text)]">
                   ${{ (usageStats[row.id]?.total_actual_cost ?? 0).toFixed(4) }}
                 </span>
               </div>
               <!-- Quota progress (if quota is set) -->
               <div v-if="row.quota > 0" class="mt-1.5">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-gray-500 dark:text-gray-400">{{ t('keys.quota') }}:</span>
+	                  <span class="text-[var(--app-muted)]">{{ t('keys.quota') }}:</span>
                   <span :class="[
                     'font-medium',
                     row.quota_used >= row.quota ? 'text-red-500' :
                     row.quota_used >= row.quota * 0.8 ? 'text-yellow-500' :
-                    'text-gray-900 dark:text-white'
+	                    'text-[var(--app-text)]'
                   ]">
                     ${{ row.quota_used?.toFixed(2) || '0.00' }} / ${{ row.quota?.toFixed(2) }}
                   </span>
                 </div>
-                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
+	                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
                   <div
                     :class="[
                       'h-full rounded-full transition-all',
@@ -182,17 +183,17 @@
               <!-- 5h window -->
               <div v-if="row.rate_limit_5h > 0">
                 <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-500 dark:text-gray-400">5h</span>
+	                  <span class="text-[var(--app-muted)]">5h</span>
                   <span :class="[
                     'font-medium tabular-nums',
                     row.usage_5h >= row.rate_limit_5h ? 'text-red-500' :
                     row.usage_5h >= row.rate_limit_5h * 0.8 ? 'text-yellow-500' :
-                    'text-gray-700 dark:text-gray-300'
+	                    'text-[var(--app-muted-strong)]'
                   ]">
                     ${{ row.usage_5h?.toFixed(2) || '0.00' }}/${{ row.rate_limit_5h?.toFixed(2) }}
                   </span>
                 </div>
-                <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
+	                <div class="h-1 w-full overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
                   <div
                     :class="[
                       'h-full rounded-full transition-all',
@@ -203,24 +204,24 @@
                     :style="{ width: Math.min((row.usage_5h / row.rate_limit_5h) * 100, 100) + '%' }"
                   />
                 </div>
-                <div v-if="row.reset_5h_at && formatResetTime(row.reset_5h_at)" class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
+	                <div v-if="row.reset_5h_at && formatResetTime(row.reset_5h_at)" class="text-[10px] text-[var(--app-muted)] tabular-nums">
                   ⟳ {{ formatResetTime(row.reset_5h_at) }}
                 </div>
               </div>
               <!-- 1d window -->
               <div v-if="row.rate_limit_1d > 0">
                 <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-500 dark:text-gray-400">1d</span>
+	                  <span class="text-[var(--app-muted)]">1d</span>
                   <span :class="[
                     'font-medium tabular-nums',
                     row.usage_1d >= row.rate_limit_1d ? 'text-red-500' :
                     row.usage_1d >= row.rate_limit_1d * 0.8 ? 'text-yellow-500' :
-                    'text-gray-700 dark:text-gray-300'
+	                    'text-[var(--app-muted-strong)]'
                   ]">
                     ${{ row.usage_1d?.toFixed(2) || '0.00' }}/${{ row.rate_limit_1d?.toFixed(2) }}
                   </span>
                 </div>
-                <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
+	                <div class="h-1 w-full overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
                   <div
                     :class="[
                       'h-full rounded-full transition-all',
@@ -231,24 +232,24 @@
                     :style="{ width: Math.min((row.usage_1d / row.rate_limit_1d) * 100, 100) + '%' }"
                   />
                 </div>
-                <div v-if="row.reset_1d_at && formatResetTime(row.reset_1d_at)" class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
+	                <div v-if="row.reset_1d_at && formatResetTime(row.reset_1d_at)" class="text-[10px] text-[var(--app-muted)] tabular-nums">
                   ⟳ {{ formatResetTime(row.reset_1d_at) }}
                 </div>
               </div>
               <!-- 7d window -->
               <div v-if="row.rate_limit_7d > 0">
                 <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-500 dark:text-gray-400">7d</span>
+	                  <span class="text-[var(--app-muted)]">7d</span>
                   <span :class="[
                     'font-medium tabular-nums',
                     row.usage_7d >= row.rate_limit_7d ? 'text-red-500' :
                     row.usage_7d >= row.rate_limit_7d * 0.8 ? 'text-yellow-500' :
-                    'text-gray-700 dark:text-gray-300'
+	                    'text-[var(--app-muted-strong)]'
                   ]">
                     ${{ row.usage_7d?.toFixed(2) || '0.00' }}/${{ row.rate_limit_7d?.toFixed(2) }}
                   </span>
                 </div>
-                <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
+	                <div class="h-1 w-full overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
                   <div
                     :class="[
                       'h-full rounded-full transition-all',
@@ -259,7 +260,7 @@
                     :style="{ width: Math.min((row.usage_7d / row.rate_limit_7d) * 100, 100) + '%' }"
                   />
                 </div>
-                <div v-if="row.reset_7d_at && formatResetTime(row.reset_7d_at)" class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
+	                <div v-if="row.reset_7d_at && formatResetTime(row.reset_7d_at)" class="text-[10px] text-[var(--app-muted)] tabular-nums">
                   ⟳ {{ formatResetTime(row.reset_7d_at) }}
                 </div>
               </div>
@@ -267,24 +268,24 @@
               <button
                 v-if="row.usage_5h > 0 || row.usage_1d > 0 || row.usage_7d > 0"
                 @click.stop="confirmResetRateLimitFromTable(row)"
-                class="mt-0.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+	                class="mt-0.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--app-muted)] transition-colors hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-primary-hover)]"
                 :title="t('keys.resetRateLimitUsage')"
               >
                 <Icon name="refresh" size="xs" />
                 {{ t('keys.resetUsage') }}
               </button>
             </div>
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">-</span>
+	            <span v-else class="text-sm text-[var(--app-muted)]">-</span>
           </template>
 
           <template #cell-expires_at="{ value }">
             <span v-if="value" :class="[
               'text-sm',
-              new Date(value) < new Date() ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-dark-400'
+	              new Date(value) < new Date() ? 'text-red-500 dark:text-red-400' : 'text-[var(--app-muted)]'
             ]">
               {{ formatDateTime(value) }}
             </span>
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{ t('keys.noExpiration') }}</span>
+	            <span v-else class="text-sm text-[var(--app-muted)]">{{ t('keys.noExpiration') }}</span>
           </template>
 
           <template #cell-status="{ value }">
@@ -300,14 +301,14 @@
           </template>
 
           <template #cell-last_used_at="{ value }">
-            <span v-if="value" class="text-sm text-gray-500 dark:text-dark-400">
+	            <span v-if="value" class="text-sm text-[var(--app-muted)]">
               {{ formatDateTime(value) }}
             </span>
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">-</span>
+	            <span v-else class="text-sm text-[var(--app-muted)]">-</span>
           </template>
 
           <template #cell-created_at="{ value }">
-            <span class="text-sm text-gray-500 dark:text-dark-400">{{ formatDateTime(value) }}</span>
+	            <span class="text-sm text-[var(--app-muted)]">{{ formatDateTime(value) }}</span>
           </template>
 
           <template #cell-actions="{ row }">
@@ -315,7 +316,7 @@
               <!-- Use Key Button -->
               <button
                 @click="openUseKeyModal(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+	                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-[var(--app-muted)] transition-colors hover:bg-[var(--app-primary-soft)] hover:text-[var(--app-primary-hover)]"
               >
                 <Icon name="terminal" size="sm" />
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
@@ -324,7 +325,7 @@
               <button
                 v-if="!publicSettings?.hide_ccs_import_button"
                 @click="importToCcswitch(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-[var(--app-muted)] transition-colors hover:bg-[var(--app-primary-soft)] hover:text-[var(--app-primary-hover)]"
               >
                 <Icon name="upload" size="sm" />
                 <span class="text-xs">{{ t('keys.importToCcSwitch') }}</span>
@@ -335,8 +336,8 @@
                 :class="[
                   'flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-colors',
                   row.status === 'active'
-                    ? 'text-gray-500 hover:bg-yellow-50 hover:text-yellow-600 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-400'
-                    : 'text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400'
+	                    ? 'text-[var(--app-muted)] hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/30 dark:hover:text-amber-300'
+	                    : 'text-[var(--app-muted)] hover:bg-[var(--app-primary-soft)] hover:text-[var(--app-primary-hover)]'
                 ]"
               >
                 <Icon v-if="row.status === 'active'" name="ban" size="sm" />
@@ -346,7 +347,7 @@
               <!-- Edit Button -->
               <button
                 @click="editKey(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+	                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-[var(--app-muted)] transition-colors hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-primary-hover)]"
               >
                 <Icon name="edit" size="sm" />
                 <span class="text-xs">{{ t('common.edit') }}</span>
@@ -354,7 +355,7 @@
               <!-- Delete Button -->
               <button
                 @click="confirmDelete(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+	                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-[var(--app-muted)] transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-300"
               >
                 <Icon name="trash" size="sm" />
                 <span class="text-xs">{{ t('common.delete') }}</span>
@@ -425,7 +426,7 @@
                 :rate-multiplier="(option as unknown as GroupOption).rate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
               />
-              <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
+	              <span v-else class="text-[var(--app-muted)]">{{ t('keys.selectGroup') }}</span>
             </template>
             <template #option="{ option, selected }">
               <GroupOptionItem
@@ -448,11 +449,11 @@
           :custom-endpoints="publicSettings?.custom_endpoints || []"
         />
 
-        <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50/60 p-4 dark:border-dark-700 dark:bg-dark-900/20 sm:p-5">
+	        <div class="space-y-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 sm:p-5">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
-              <label class="text-sm font-medium text-gray-700 dark:text-dark-200">多分组路由</label>
-              <p class="mt-1 max-w-2xl text-xs leading-5 text-gray-500 dark:text-dark-400">
+	              <label class="text-sm font-medium text-[var(--app-text)]">多分组路由</label>
+	              <p class="mt-1 max-w-2xl text-xs leading-5 text-[var(--app-muted)]">
                 开启后可按优先级和权重为同一个 Key 配置多个分组
               </p>
             </div>
@@ -461,7 +462,7 @@
               @click="toggleGroupRoutes"
               :class="[
                 'relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors',
-                formData.enable_group_routes ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+	                formData.enable_group_routes ? 'bg-[var(--app-primary)]' : 'bg-[var(--app-border-strong)]'
               ]"
             >
               <span
@@ -477,17 +478,17 @@
             <div
               v-for="(route, index) in formData.group_routes"
               :key="index"
-              class="space-y-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-dark-700 dark:bg-dark-800/70 sm:p-4"
+	              class="space-y-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-none sm:p-4"
             >
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex min-w-0 items-center gap-2">
-                  <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-primary-50 px-2 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+	                  <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--app-primary-soft)] px-2 text-xs font-medium text-[var(--app-primary-hover)]">
                     {{ index + 1 }}
                   </span>
-                  <span class="text-sm font-medium text-gray-700 dark:text-dark-200">路由配置</span>
+	                  <span class="text-sm font-medium text-[var(--app-text)]">路由配置</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <label class="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-600 dark:border-dark-600 dark:bg-dark-700/60 dark:text-dark-300">
+	                  <label class="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 text-sm text-[var(--app-muted-strong)]">
                     <input
                       v-model="route.enabled"
                       type="checkbox"
@@ -508,7 +509,7 @@
 
               <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(16rem,1fr)_8rem_8rem_9rem]">
                 <div class="md:col-span-2 lg:col-span-1">
-                  <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">分组</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">分组</label>
                   <Select
                     v-model="route.group_id"
                     :options="groupOptions"
@@ -525,7 +526,7 @@
                         :rate-multiplier="(option as unknown as GroupOption).rate"
                         :user-rate-multiplier="(option as unknown as GroupOption).userRate"
                       />
-                      <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
+	                      <span v-else class="text-[var(--app-muted)]">{{ t('keys.selectGroup') }}</span>
                     </template>
                     <template #option="{ option, selected }">
                       <GroupOptionItem
@@ -542,7 +543,7 @@
                   </Select>
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">优先级</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">优先级</label>
                   <input
                     v-model.number="route.priority"
                     type="number"
@@ -552,7 +553,7 @@
                   />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">权重</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">权重</label>
                   <input
                     v-model.number="route.weight"
                     type="number"
@@ -562,7 +563,7 @@
                   />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">冷却秒数</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">冷却秒数</label>
                   <input
                     v-model.number="route.cooldown_seconds"
                     type="number"
@@ -589,7 +590,7 @@
               @click="formData.use_custom_key = !formData.use_custom_key"
               :class="[
                 'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                formData.use_custom_key ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+	                formData.use_custom_key ? 'bg-[var(--app-primary)]' : 'bg-[var(--app-border-strong)]'
               ]"
             >
               <span
@@ -631,7 +632,7 @@
               @click="formData.enable_ip_restriction = !formData.enable_ip_restriction"
               :class="[
                 'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                formData.enable_ip_restriction ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+	                formData.enable_ip_restriction ? 'bg-[var(--app-primary)]' : 'bg-[var(--app-border-strong)]'
               ]"
             >
               <span
@@ -695,7 +696,7 @@
           <div class="space-y-4">
             <div>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+	                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-muted)]">$</span>
                 <input
                   v-model.number="formData.quota"
                   type="number"
@@ -712,12 +713,12 @@
             <div v-if="showEditModal && selectedKey && selectedKey.quota > 0">
               <label class="input-label">{{ t('keys.quotaUsed') }}</label>
               <div class="flex items-center gap-2">
-                <div class="flex-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-dark-700">
-                  <span class="font-medium text-gray-900 dark:text-white">
+	                <div class="flex-1 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2">
+	                  <span class="font-medium text-[var(--app-text)]">
                     ${{ selectedKey.quota_used?.toFixed(4) || '0.0000' }}
                   </span>
-                  <span class="mx-2 text-gray-400">/</span>
-                  <span class="text-gray-500 dark:text-gray-400">
+	                  <span class="mx-2 text-[var(--app-muted)]">/</span>
+	                  <span class="text-[var(--app-muted)]">
                     ${{ selectedKey.quota?.toFixed(2) || '0.00' }}
                   </span>
                 </div>
@@ -743,7 +744,7 @@
               @click="formData.enable_rate_limit = !formData.enable_rate_limit"
               :class="[
                 'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                formData.enable_rate_limit ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+	                formData.enable_rate_limit ? 'bg-[var(--app-primary)]' : 'bg-[var(--app-border-strong)]'
               ]"
             >
               <span
@@ -761,7 +762,7 @@
             <div>
               <label class="input-label">{{ t('keys.rateLimit5h') }}</label>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+	                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-muted)]">$</span>
                 <input
                   v-model.number="formData.rate_limit_5h"
                   type="number"
@@ -774,22 +775,22 @@
               <!-- Usage info (edit mode only) -->
               <div v-if="showEditModal && selectedKey && selectedKey.rate_limit_5h > 0" class="mt-2">
                 <div class="flex items-center gap-2">
-                  <div class="flex-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-dark-700 text-sm">
+	                  <div class="flex-1 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-sm">
                     <span :class="[
                       'font-medium',
                       selectedKey.usage_5h >= selectedKey.rate_limit_5h ? 'text-red-500' :
                       selectedKey.usage_5h >= selectedKey.rate_limit_5h * 0.8 ? 'text-yellow-500' :
-                      'text-gray-900 dark:text-white'
+	                      'text-[var(--app-text)]'
                     ]">
                       ${{ selectedKey.usage_5h?.toFixed(4) || '0.0000' }}
                     </span>
-                    <span class="mx-2 text-gray-400">/</span>
-                    <span class="text-gray-500 dark:text-gray-400">
+	                    <span class="mx-2 text-[var(--app-muted)]">/</span>
+	                    <span class="text-[var(--app-muted)]">
                       ${{ selectedKey.rate_limit_5h?.toFixed(2) || '0.00' }}
                     </span>
                   </div>
                 </div>
-                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
+	                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
                   <div
                     :class="[
                       'h-full rounded-full transition-all',
@@ -807,7 +808,7 @@
             <div>
               <label class="input-label">{{ t('keys.rateLimit1d') }}</label>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+	                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-muted)]">$</span>
                 <input
                   v-model.number="formData.rate_limit_1d"
                   type="number"
@@ -820,22 +821,22 @@
               <!-- Usage info (edit mode only) -->
               <div v-if="showEditModal && selectedKey && selectedKey.rate_limit_1d > 0" class="mt-2">
                 <div class="flex items-center gap-2">
-                  <div class="flex-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-dark-700 text-sm">
+	                  <div class="flex-1 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-sm">
                     <span :class="[
                       'font-medium',
                       selectedKey.usage_1d >= selectedKey.rate_limit_1d ? 'text-red-500' :
                       selectedKey.usage_1d >= selectedKey.rate_limit_1d * 0.8 ? 'text-yellow-500' :
-                      'text-gray-900 dark:text-white'
+	                      'text-[var(--app-text)]'
                     ]">
                       ${{ selectedKey.usage_1d?.toFixed(4) || '0.0000' }}
                     </span>
-                    <span class="mx-2 text-gray-400">/</span>
-                    <span class="text-gray-500 dark:text-gray-400">
+	                    <span class="mx-2 text-[var(--app-muted)]">/</span>
+	                    <span class="text-[var(--app-muted)]">
                       ${{ selectedKey.rate_limit_1d?.toFixed(2) || '0.00' }}
                     </span>
                   </div>
                 </div>
-                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
+	                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
                   <div
                     :class="[
                       'h-full rounded-full transition-all',
@@ -853,7 +854,7 @@
             <div>
               <label class="input-label">{{ t('keys.rateLimit7d') }}</label>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+	                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-muted)]">$</span>
                 <input
                   v-model.number="formData.rate_limit_7d"
                   type="number"
@@ -866,22 +867,22 @@
               <!-- Usage info (edit mode only) -->
               <div v-if="showEditModal && selectedKey && selectedKey.rate_limit_7d > 0" class="mt-2">
                 <div class="flex items-center gap-2">
-                  <div class="flex-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-dark-700 text-sm">
+	                  <div class="flex-1 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-sm">
                     <span :class="[
                       'font-medium',
                       selectedKey.usage_7d >= selectedKey.rate_limit_7d ? 'text-red-500' :
                       selectedKey.usage_7d >= selectedKey.rate_limit_7d * 0.8 ? 'text-yellow-500' :
-                      'text-gray-900 dark:text-white'
+	                      'text-[var(--app-text)]'
                     ]">
                       ${{ selectedKey.usage_7d?.toFixed(4) || '0.0000' }}
                     </span>
-                    <span class="mx-2 text-gray-400">/</span>
-                    <span class="text-gray-500 dark:text-gray-400">
+	                    <span class="mx-2 text-[var(--app-muted)]">/</span>
+	                    <span class="text-[var(--app-muted)]">
                       ${{ selectedKey.rate_limit_7d?.toFixed(2) || '0.00' }}
                     </span>
                   </div>
                 </div>
-                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
+	                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
                   <div
                     :class="[
                       'h-full rounded-full transition-all',
@@ -917,7 +918,7 @@
               @click="formData.enable_expiration = !formData.enable_expiration"
               :class="[
                 'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                formData.enable_expiration ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+	                formData.enable_expiration ? 'bg-[var(--app-primary)]' : 'bg-[var(--app-border-strong)]'
               ]"
             >
               <span
@@ -940,8 +941,8 @@
                 :class="[
                   'rounded-lg px-3 py-1.5 text-sm transition-colors',
                   formData.expiration_preset === days
-                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-400 dark:hover:bg-dark-600'
+	                    ? 'bg-[var(--app-primary-soft)] text-[var(--app-primary-hover)]'
+	                    : 'bg-[var(--app-surface-muted)] text-[var(--app-muted-strong)] hover:text-[var(--app-text)]'
                 ]"
               >
                 {{ showEditModal ? t('keys.extendDays', { days }) : t('keys.expiresInDays', { days }) }}
@@ -952,8 +953,8 @@
                 :class="[
                   'rounded-lg px-3 py-1.5 text-sm transition-colors',
                   formData.expiration_preset === 'custom'
-                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-400 dark:hover:bg-dark-600'
+	                    ? 'bg-[var(--app-primary-soft)] text-[var(--app-primary-hover)]'
+	                    : 'bg-[var(--app-surface-muted)] text-[var(--app-muted-strong)] hover:text-[var(--app-text)]'
                 ]"
               >
                 {{ t('keys.customDate') }}
@@ -973,8 +974,8 @@
 
             <!-- Current expiration display (only in edit mode) -->
             <div v-if="showEditModal && selectedKey?.expires_at" class="text-sm">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('keys.currentExpiration') }}: </span>
-              <span class="font-medium text-gray-900 dark:text-white">
+	              <span class="text-[var(--app-muted)]">{{ t('keys.currentExpiration') }}: </span>
+	              <span class="font-medium text-[var(--app-text)]">
                 {{ formatDateTime(selectedKey.expires_at) }}
               </span>
             </div>
@@ -1080,31 +1081,31 @@
       @close="closeCcsClientSelect"
     >
       <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">
+	        <p class="text-sm text-[var(--app-muted-strong)]">
           {{ t('keys.ccsClientSelect.description') }}
 	        </p>
 	        <div class="grid grid-cols-2 gap-3">
 	          <button
 	            @click="handleCcsClientSelect('claude')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
+		            class="flex flex-col items-center gap-2 rounded-2xl border border-[var(--app-border)] p-4 transition-colors hover:border-[var(--app-primary)] hover:bg-[var(--app-primary-soft)]"
 	          >
-	            <Icon name="terminal" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
+		            <Icon name="terminal" size="xl" class="text-[var(--app-muted-strong)]" />
+		            <span class="font-medium text-[var(--app-text)]">{{
 	              t('keys.ccsClientSelect.claudeCode')
 	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
+		            <span class="text-xs text-[var(--app-muted)]">{{
 	              t('keys.ccsClientSelect.claudeCodeDesc')
 	            }}</span>
 	          </button>
 	          <button
 	            @click="handleCcsClientSelect('gemini')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
+		            class="flex flex-col items-center gap-2 rounded-2xl border border-[var(--app-border)] p-4 transition-colors hover:border-[var(--app-primary)] hover:bg-[var(--app-primary-soft)]"
 	          >
-	            <Icon name="sparkles" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
+		            <Icon name="sparkles" size="xl" class="text-[var(--app-muted-strong)]" />
+		            <span class="font-medium text-[var(--app-text)]">{{
 	              t('keys.ccsClientSelect.geminiCli')
 	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
+		            <span class="text-xs text-[var(--app-muted)]">{{
 	              t('keys.ccsClientSelect.geminiCliDesc')
 	            }}</span>
 	          </button>

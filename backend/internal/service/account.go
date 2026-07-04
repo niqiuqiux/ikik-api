@@ -1048,6 +1048,16 @@ func (a *Account) GetExtraString(key string) string {
 	return ""
 }
 
+// IsFreeModelOpenAICompatible reports whether the account was created by the
+// free-model user flow. Those providers expose OpenAI-compatible chat endpoints,
+// not the OpenAI Responses API.
+func (a *Account) IsFreeModelOpenAICompatible() bool {
+	if a == nil || a.Platform != PlatformOpenAI || a.Type != AccountTypeAPIKey {
+		return false
+	}
+	return strings.TrimSpace(a.GetExtraString("free_model_provider")) != ""
+}
+
 func (a *Account) GetClaudeUserID() string {
 	if v := strings.TrimSpace(a.GetExtraString("claude_user_id")); v != "" {
 		return v

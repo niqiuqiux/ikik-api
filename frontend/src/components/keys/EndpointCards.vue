@@ -74,14 +74,14 @@ onBeforeUnmount(() => {
 <template>
   <section
     v-if="endpoints.length"
-    class="rounded-xl border border-[#d9d9e3] bg-[#ffffff] p-4 dark:border-[#565869] dark:bg-[#212121]"
+    class="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4"
   >
     <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h3 class="text-sm font-semibold text-[#202123] dark:text-[#ececf1]">
+        <h3 class="text-sm font-semibold text-[var(--app-text)]">
           {{ t('keys.endpoints.cardTitle') }}
         </h3>
-        <p class="mt-1 text-xs leading-5 text-[#6e6e80] dark:text-[#acacbe]">
+        <p class="mt-1 text-xs leading-5 text-[var(--app-muted)]">
           {{ t('keys.endpoints.cardDescription') }}
         </p>
       </div>
@@ -91,26 +91,26 @@ onBeforeUnmount(() => {
       <div
         v-for="item in endpoints"
         :key="item.endpoint"
-        class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-[#d9d9e3] bg-white px-3 py-2.5 dark:border-[#565869] dark:bg-[#2f2f2f]"
+        class="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 transition-colors hover:border-[var(--app-border-strong)] hover:bg-[var(--app-surface-muted)]"
       >
         <div class="min-w-0">
           <div class="flex min-w-0 items-center gap-2">
-            <p class="truncate text-sm font-medium text-[#202123] dark:text-[#ececf1]">
+            <p class="truncate text-sm font-medium text-[var(--app-text)]">
               {{ item.name }}
             </p>
             <span
               v-if="item.isDefault"
-              class="shrink-0 rounded bg-[#e6f6f1] px-1.5 py-0.5 text-[10px] font-medium text-[#0d8f70] dark:bg-[#2f2f2f] dark:text-[#e8c4a6]"
+              class="shrink-0 rounded-full bg-[var(--app-primary-soft)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--app-primary-hover)]"
             >
               {{ t('keys.endpoints.default') }}
             </span>
           </div>
-          <code class="mt-1 block truncate font-mono text-xs text-[#6e6e80] dark:text-[#acacbe]">
+          <code class="mt-1 block truncate font-mono text-xs text-[var(--app-muted)]">
             {{ item.endpoint }}
           </code>
           <p
             v-if="item.description"
-            class="mt-1 line-clamp-2 text-xs leading-5 text-[#6e6e80] dark:text-[#acacbe]"
+            class="mt-1 line-clamp-2 text-xs leading-5 text-[var(--app-muted)]"
           >
             {{ item.description }}
           </p>
@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
           class="shrink-0 rounded-lg p-2 transition-colors"
           :class="copiedEndpoint === item.endpoint
             ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300'
-            : 'text-[#6e6e80] hover:bg-[#e6f6f1] hover:text-[#202123] dark:text-[#acacbe] dark:hover:bg-[#2f2f2f] dark:hover:text-[#ececf1]'"
+            : 'text-[var(--app-muted)] hover:bg-[var(--app-primary-soft)] hover:text-[var(--app-text)]'"
           :title="copiedEndpoint === item.endpoint ? t('keys.endpoints.copiedHint') : t('keys.endpoints.clickToCopy')"
           @click="copyEndpoint(item.endpoint)"
         >

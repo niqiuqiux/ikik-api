@@ -564,6 +564,9 @@ export interface SystemSettings {
   // Available Channels feature switch
   available_channels_enabled: boolean;
 
+  // Free Models feature switch
+  free_models_enabled: boolean;
+
   // Auto model routing
   auto_model_settings?: AutoModelSettings;
 
@@ -790,6 +793,9 @@ export interface UpdateSettingsRequest {
 
   // Available Channels feature switch
   available_channels_enabled?: boolean;
+
+  // Free Models feature switch
+  free_models_enabled?: boolean;
 
   // Auto model routing
   auto_model_settings?: AutoModelSettings;

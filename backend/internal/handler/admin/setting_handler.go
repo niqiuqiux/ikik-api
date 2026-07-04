@@ -352,6 +352,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 
 		AvailableChannelsEnabled: settings.AvailableChannelsEnabled,
+		FreeModelsEnabled:        settings.FreeModelsEnabled,
 
 		CarpoolEnabled:           settings.CarpoolEnabled,
 		CarpoolBaseServiceFeeUSD: settings.CarpoolBaseServiceFeeUSD,
@@ -679,6 +680,9 @@ type UpdateSettingsRequest struct {
 
 	// Available Channels feature switch (user-facing)
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
+
+	// Free Models feature switch (user-facing)
+	FreeModelsEnabled *bool `json:"free_models_enabled"`
 
 	// Auto model routing
 	AutoModelSettings *dto.AutoModelSettings `json:"auto_model_settings"`
@@ -1707,6 +1711,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.AvailableChannelsEnabled
 		}(),
+		FreeModelsEnabled: func() bool {
+			if req.FreeModelsEnabled != nil {
+				return *req.FreeModelsEnabled
+			}
+			return previousSettings.FreeModelsEnabled
+		}(),
 		AutoModelSettings: func() service.AutoModelSettings {
 			if req.AutoModelSettings != nil {
 				return autoModelSettingsToService(*req.AutoModelSettings)
@@ -2053,6 +2063,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ChannelMonitorDefaultIntervalSeconds: updatedSettings.ChannelMonitorDefaultIntervalSeconds,
 
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
+		FreeModelsEnabled:        updatedSettings.FreeModelsEnabled,
 		AutoModelSettings:        autoModelSettingsToDTO(updatedSettings.AutoModelSettings),
 
 		CarpoolEnabled:           updatedSettings.CarpoolEnabled,
@@ -2364,6 +2375,9 @@ func preserveOmittedUpdateSettingsFields(req *UpdateSettingsRequest, previous *s
 	}
 	if !fieldProvided(fields, "carpool_enabled") {
 		req.CarpoolEnabled = &previous.CarpoolEnabled
+	}
+	if !fieldProvided(fields, "free_models_enabled") {
+		req.FreeModelsEnabled = &previous.FreeModelsEnabled
 	}
 	if !fieldProvided(fields, "carpool_base_service_fee_usd") {
 		req.CarpoolBaseServiceFeeUSD = &previous.CarpoolBaseServiceFeeUSD
@@ -2827,6 +2841,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.AvailableChannelsEnabled != after.AvailableChannelsEnabled {
 		changed = append(changed, "available_channels_enabled")
+	}
+	if before.FreeModelsEnabled != after.FreeModelsEnabled {
+		changed = append(changed, "free_models_enabled")
 	}
 	if before.CarpoolEnabled != after.CarpoolEnabled {
 		changed = append(changed, "carpool_enabled")

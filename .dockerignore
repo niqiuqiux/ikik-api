@@ -25,6 +25,7 @@ Thumbs.db
 # Build artifacts
 dist/
 build/
+output/
 
 # Node modules (will be installed in container)
 frontend/node_modules/

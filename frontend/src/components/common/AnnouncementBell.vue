@@ -3,7 +3,7 @@
     <!-- 铃铛按钮 -->
     <button
       @click="openModal"
-      class="relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition-all hover:bg-gray-100 hover:scale-105 dark:text-gray-400 dark:hover:bg-dark-800"
+      class="relative flex h-9 w-9 items-center justify-center rounded-xl text-gray-600 transition-colors hover:bg-[var(--app-surface-muted)] dark:text-gray-400"
       :class="{ 'text-[#0d8f70] dark:text-[#45d09a]': unreadCount > 0 }"
       :aria-label="t('announcements.title')"
     >
@@ -23,14 +23,14 @@
       <Transition name="modal-fade">
         <div
           v-if="isModalOpen"
-          class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/70 p-4 pt-[8vh] backdrop-blur-md"
+          class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/45 p-4 pt-[8vh] backdrop-blur-md"
           @click="closeModal"
         >
           <div
-            class="w-full max-w-[620px] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-dark-800 dark:ring-white/10"
+            class="w-full max-w-[620px] overflow-hidden rounded-3xl bg-[var(--app-surface)] shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
             @click.stop
           >
-            <div class="relative overflow-hidden border-b border-[#d9d9e3] bg-[#f7f7f8] px-6 py-5 dark:border-[#3f3f46] dark:bg-[#212121]">
+            <div class="relative overflow-hidden border-b border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-5">
               <div class="relative z-10 flex items-start justify-between">
                 <div>
                   <div class="flex items-center gap-2">
@@ -57,7 +57,7 @@
                   </button>
                   <button
                     @click="closeModal"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/50 text-gray-500 backdrop-blur-sm transition-all hover:bg-white hover:text-gray-700 dark:bg-dark-700/50 dark:text-gray-400 dark:hover:bg-dark-700 dark:hover:text-gray-300"
+                    class="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-[var(--app-surface-muted)] hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                     :aria-label="t('common.close')"
                   >
                     <Icon name="x" size="sm" />
@@ -81,8 +81,8 @@
                 <div
                   v-for="item in announcements"
                   :key="item.id"
-                  class="group relative flex items-center gap-4 border-b border-gray-100 px-6 py-4 transition-all hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700/30"
-                  :class="{ 'bg-[#ffffff] dark:bg-[#212121]/60': !item.read_at }"
+                  class="group relative flex items-center gap-4 border-b border-[var(--app-border)] px-6 py-4 transition-colors hover:bg-[var(--app-surface-muted)]"
+                  :class="{ 'bg-[var(--app-surface)]': !item.read_at }"
                   style="min-height: 72px"
                   @click="openDetail(item)"
                 >
@@ -121,7 +121,7 @@
                         </time>
                         <span
                           v-if="!item.read_at"
-                          class="inline-flex items-center gap-1 rounded-md bg-[#f0e4d6] px-1.5 py-0.5 text-xs font-medium text-[#8f4c32] dark:bg-[#35261f] dark:text-[#f1c7aa]"
+                          class="inline-flex items-center gap-1 rounded-md bg-[var(--app-primary-soft)] px-1.5 py-0.5 text-xs font-medium text-[#0d8f70] dark:bg-[#10a37f]/15 dark:text-[#45d09a]"
                         >
                           <span class="relative flex h-1.5 w-1.5">
                             <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10a37f] opacity-60"></span>
@@ -180,14 +180,14 @@
       <Transition name="modal-fade">
         <div
           v-if="detailModalOpen && selectedAnnouncement"
-          class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-black/70 p-4 pt-[6vh] backdrop-blur-md"
+          class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-black/45 p-4 pt-[6vh] backdrop-blur-md"
           @click="closeDetail"
         >
           <div
-            class="w-full max-w-[780px] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-dark-800 dark:ring-white/10"
+            class="w-full max-w-[780px] overflow-hidden rounded-3xl bg-[var(--app-surface)] shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
             @click.stop
           >
-            <div class="relative overflow-hidden border-b border-[#d9d9e3] bg-[#f7f7f8] px-8 py-6 dark:border-[#3f3f46] dark:bg-[#212121]">
+            <div class="relative overflow-hidden border-b border-[var(--app-border)] bg-[var(--app-surface)] px-8 py-6">
               <div class="relative z-10 flex items-start justify-between gap-4">
                 <div class="flex-1 min-w-0">
                   <!-- Icon and Category -->
@@ -198,12 +198,12 @@
                       </svg>
                     </div>
                     <div class="flex items-center gap-2">
-                      <span class="rounded-lg bg-[#f0e4d6] px-2.5 py-1 text-xs font-medium text-[#8f4c32] dark:bg-[#35261f] dark:text-[#f1c7aa]">
+                      <span class="rounded-lg bg-[var(--app-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--app-muted-strong)]">
                         {{ t('announcements.title') }}
                       </span>
                       <span
                         v-if="!selectedAnnouncement.read_at"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-[#f0e4d6] px-2.5 py-1 text-xs font-medium text-[#8f4c32] ring-1 ring-[#ddc8b6] dark:bg-[#35261f] dark:text-[#f1c7aa] dark:ring-[#5a4035]"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-primary-soft)] px-2.5 py-1 text-xs font-medium text-[#0d8f70] ring-1 ring-[#10a37f]/20 dark:bg-[#10a37f]/15 dark:text-[#45d09a] dark:ring-[#10a37f]/25"
                       >
                         <span class="relative flex h-2 w-2">
                           <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10a37f] opacity-60"></span>
@@ -240,7 +240,7 @@
                 <!-- Close button -->
                 <button
                   @click="closeDetail"
-                  class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/50 text-gray-500 backdrop-blur-sm transition-all hover:bg-white hover:text-gray-700 hover:shadow-lg dark:bg-dark-700/50 dark:text-gray-400 dark:hover:bg-dark-700 dark:hover:text-gray-300"
+                  class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-[var(--app-surface-muted)] hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                   :aria-label="t('common.close')"
                 >
                   <Icon name="x" size="md" />
@@ -249,7 +249,7 @@
             </div>
 
             <!-- Body with Enhanced Markdown -->
-            <div class="max-h-[60vh] overflow-y-auto bg-white px-8 py-8 dark:bg-dark-800">
+            <div class="max-h-[60vh] overflow-y-auto bg-[var(--app-surface)] px-8 py-8">
               <!-- Content with decorative border -->
               <div class="relative">
                 <!-- Decorative left border -->
@@ -265,7 +265,7 @@
             </div>
 
             <!-- Footer with Actions -->
-            <div class="border-t border-[#d9d9e3] bg-[#ffffff] px-8 py-5 dark:border-[#3f3f46] dark:bg-[#212121]">
+            <div class="border-t border-[var(--app-border)] bg-[var(--app-surface)] px-8 py-5">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

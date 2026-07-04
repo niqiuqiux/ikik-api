@@ -5309,6 +5309,31 @@
           </div>
         </div>
 
+        <!-- Free Models feature card -->
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.features.freeModels.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.features.freeModels.description') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.features.freeModels.enabled') }}
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.features.freeModels.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.free_models_enabled" />
+            </div>
+          </div>
+        </div>
+
         <!-- Carpool Pools feature card -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -7598,6 +7623,8 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   // Available Channels feature switch
   available_channels_enabled: false,
+  // Free Models feature switch
+  free_models_enabled: false,
   // Carpool Pools feature switch
   carpool_enabled: false,
   carpool_base_service_fee_usd: 75,
@@ -9017,6 +9044,8 @@ async function saveSettings() {
         Number(form.channel_monitor_default_interval_seconds) || 60,
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
+      // Free Models feature switch
+      free_models_enabled: form.free_models_enabled,
       // Carpool Pools feature switch
       carpool_enabled: form.carpool_enabled,
       carpool_base_service_fee_usd: positiveNumberOrZero(

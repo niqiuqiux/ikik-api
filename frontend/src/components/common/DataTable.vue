@@ -4,11 +4,11 @@
       <div v-for="i in 5" :key="i" class="mobile-data-card">
         <div class="space-y-3">
           <div v-for="column in dataColumns" :key="column.key" class="flex justify-between">
-            <div class="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
-            <div class="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+            <div class="h-4 w-20 animate-pulse rounded bg-[var(--app-surface-muted)]"></div>
+            <div class="h-4 w-32 animate-pulse rounded bg-[var(--app-surface-muted)]"></div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-3 dark:border-dark-700">
-            <div class="h-8 w-full animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+          <div v-if="hasActionsColumn" class="border-t border-[var(--app-border)] pt-3">
+            <div class="h-8 w-full animate-pulse rounded bg-[var(--app-surface-muted)]"></div>
           </div>
         </div>
       </div>
@@ -23,7 +23,7 @@
               size="xl"
               class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
             />
-            <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-lg font-medium text-[var(--app-text)]">
               {{ t('empty.noData') }}
             </p>
           </div>
@@ -43,16 +43,16 @@
             :key="column.key"
             class="flex items-start justify-between gap-4"
           >
-            <span class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
+            <span class="text-xs font-medium text-[var(--app-muted)]">
               {{ column.label }}
             </span>
-            <div class="text-right text-sm text-gray-900 dark:text-gray-100">
+            <div class="min-w-0 text-right text-sm text-[var(--app-text)]">
               <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :expanded="actionsExpanded">
                 {{ column.formatter ? column.formatter(row[column.key], row) : row[column.key] }}
               </slot>
             </div>
           </div>
-          <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-3 dark:border-dark-700">
+          <div v-if="hasActionsColumn" class="border-t border-[var(--app-border)] pt-3">
             <slot name="cell-actions" :row="row" :value="row['actions']" :expanded="actionsExpanded"></slot>
           </div>
         </div>
@@ -69,7 +69,7 @@
       'is-scrollable': isScrollable
     }"
   >
-    <table class="claude-data-table w-full min-w-max">
+    <table class="app-data-table w-full min-w-max">
       <thead class="table-header">
         <tr>
           <th
@@ -78,7 +78,7 @@
             scope="col"
             :aria-sort="column.sortable ? getColumnAriaSort(column.key) : undefined"
             :class="[
-              'sticky-header-cell data-table-header-cell py-3 text-left text-xs font-medium uppercase tracking-wider',
+              'sticky-header-cell data-table-header-cell py-3 text-left text-xs font-medium',
               getAdaptivePaddingClass(),
               { 'cursor-pointer data-table-sortable': column.sortable },
               getStickyColumnClass(column, index),
@@ -126,7 +126,7 @@
         <tr v-if="loading" v-for="i in 5" :key="i">
           <td v-for="column in columns" :key="column.key" :class="['whitespace-nowrap py-4', getAdaptivePaddingClass()]">
             <div class="animate-pulse">
-              <div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-dark-700"></div>
+              <div class="h-4 w-3/4 rounded bg-[var(--app-surface-muted)]"></div>
             </div>
           </td>
         </tr>
@@ -135,7 +135,7 @@
         <tr v-else-if="!data || data.length === 0">
           <td
             :colspan="columns.length"
-            :class="['py-12 text-center text-gray-500 dark:text-dark-400', getAdaptivePaddingClass()]"
+            :class="['py-12 text-center text-[var(--app-muted)]', getAdaptivePaddingClass()]"
           >
             <slot name="empty">
               <div class="flex flex-col items-center">
@@ -144,7 +144,7 @@
                   size="xl"
                   class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
                 />
-                <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                <p class="text-lg font-medium text-[var(--app-text)]">
                   {{ t('empty.noData') }}
                 </p>
               </div>
@@ -728,6 +728,7 @@ defineExpose({
   flex: 1;
   min-height: 0;
   isolation: isolate;
+  border-radius: 1rem;
 }
 
 /* 表头容器，确保在滚动时覆盖表体内容 */
@@ -735,11 +736,11 @@ defineExpose({
   position: sticky;
   top: 0;
   z-index: 200;
-  background-color: rgb(249 250 251);
+  background-color: var(--app-surface);
 }
 
 .dark .table-wrapper .table-header {
-  background-color: rgb(31 41 55);
+  background-color: var(--app-surface);
 }
 
 /* 表体保持在表头下方 */
@@ -753,11 +754,11 @@ defineExpose({
   position: sticky;
   top: 0;
   z-index: 210; /* 必须高于所有表体内容 */
-  background-color: rgb(249 250 251);
+  background-color: var(--app-surface);
 }
 
 .dark .sticky-header-cell {
-  background-color: rgb(31 41 55);
+  background-color: var(--app-surface);
 }
 
 /* Sticky 列基础样式 */
@@ -793,20 +794,20 @@ defineExpose({
 
 /* 表体 sticky 列背景 */
 tbody .sticky-col {
-  background-color: white;
+  background-color: var(--app-surface);
 }
 
 .dark tbody .sticky-col {
-  background-color: rgb(17 24 39);
+  background-color: var(--app-surface);
 }
 
 /* hover 状态保持 */
 tbody tr:hover .sticky-col {
-  background-color: rgb(249 250 251);
+  background-color: var(--app-surface-muted);
 }
 
 .dark tbody tr:hover .sticky-col {
-  background-color: rgb(31 41 55);
+  background-color: var(--app-surface-muted);
 }
 
 /* 阴影只在可滚动时显示 */
@@ -859,25 +860,26 @@ tbody tr:hover .sticky-col {
   background: linear-gradient(to left, rgba(0, 0, 0, 0.2), transparent);
 }
 .table-wrapper {
-  --table-surface: #ffffff;
-  --table-header-surface: #f4eee5;
-  --table-hover-surface: #f7f1e8;
-  --table-border: rgba(112, 92, 74, 0.1);
-  --table-header-border: rgba(112, 92, 74, 0.14);
-  --table-shadow: rgba(112, 92, 74, 0.14);
+  --table-surface: var(--app-surface);
+  --table-header-surface: var(--app-surface);
+  --table-hover-surface: var(--app-surface-muted);
+  --table-border: var(--app-border);
+  --table-header-border: var(--app-border);
+  --table-shadow: rgba(0, 0, 0, 0.08);
   background: var(--table-surface);
+  border: 1px solid var(--app-border);
 }
 
 .dark .table-wrapper {
-  --table-surface: #212121;
-  --table-header-surface: #212121;
-  --table-hover-surface: #28211d;
-  --table-border: rgba(244, 239, 231, 0.08);
-  --table-header-border: rgba(244, 239, 231, 0.1);
+  --table-surface: var(--app-surface);
+  --table-header-surface: var(--app-surface);
+  --table-hover-surface: var(--app-surface-muted);
+  --table-border: var(--app-border);
+  --table-header-border: var(--app-border);
   --table-shadow: rgba(0, 0, 0, 0.24);
 }
 
-.claude-data-table {
+.app-data-table {
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -892,29 +894,29 @@ tbody tr:hover .sticky-col {
 }
 
 .data-table-header-cell {
-  color: #7d7064;
-  letter-spacing: 0.02em;
+  color: var(--app-muted);
+  letter-spacing: 0;
 }
 
 .dark .data-table-header-cell {
-  color: #a99d91;
+  color: var(--app-muted);
 }
 
 .data-table-sortable:hover {
-  background: rgba(112, 92, 74, 0.07);
+  background: var(--app-surface-muted);
 }
 
 .dark .data-table-sortable:hover {
-  background: rgba(244, 239, 231, 0.07);
+  background: var(--app-surface-muted);
 }
 
 .data-table-cell {
   border-bottom: 1px solid var(--table-border);
-  color: #332d27;
+  color: var(--app-text);
 }
 
 .dark .data-table-cell {
-  color: #eee6dc;
+  color: var(--app-text);
 }
 
 .data-table-row {
@@ -945,11 +947,11 @@ tbody .sticky-col,
 
 .mobile-data-card,
 .mobile-data-empty {
-  border: 1px solid rgba(112, 92, 74, 0.14);
-  background: #ffffff;
-  border-radius: 0.875rem;
-  color: #332d27;
-  box-shadow: 0 1px 0 rgba(112, 92, 74, 0.05);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  border-radius: 1rem;
+  color: var(--app-text);
+  box-shadow: none;
 }
 
 .mobile-data-card {
@@ -963,68 +965,58 @@ tbody .sticky-col,
 
 .dark .mobile-data-card,
 .dark .mobile-data-empty {
-  border-color: rgba(244, 239, 231, 0.12);
-  background: #212121;
-  color: #eee6dc;
+  border-color: var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
   box-shadow: none;
 }
 </style>
 
 <style>
-/* ==========================================================================
-   终极悬浮滚动条防丢器 (Sledgehammer Override)
-   绕过 style.css 中 `* { scrollbar-color: transparent }` 的全局悬停隐身诅咒！
-   ========================================================================== */
-
-/* 1. 废除全局针对所有元素的 scrollbar-width 设定，拿回 Chrome/Safari 下 Webkit 滚动条规则的控制权！ */
 .table-wrapper {
-  scrollbar-width: auto !important; /* 阻止 Chrome 121 退化到原生 Mac 闪隐滚动条 */
+  scrollbar-width: thin !important;
 }
 
-/* 2. 重写 Webkit 滚动层，全部加上 !important 强制覆盖透明悬停陷阱 */
 .table-wrapper::-webkit-scrollbar {
-  height: 12px !important;
-  width: 12px !important;
+  height: 10px !important;
+  width: 10px !important;
   display: block !important;
   background-color: transparent !important;
 }
 
 .table-wrapper::-webkit-scrollbar-track {
-  background-color: rgba(0, 0, 0, 0.03) !important;
+  background-color: transparent !important;
   border-radius: 6px !important;
   margin: 0 4px !important;
 }
 .dark .table-wrapper::-webkit-scrollbar-track {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: transparent !important;
 }
 
-/* 常驻、不透明的滑块，无视鼠标是否 hover 都在那！ */
 .table-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(107, 114, 128, 0.75) !important; 
+  background-color: rgba(107, 114, 128, 0.34) !important;
   border-radius: 6px !important;
   border: 2px solid transparent !important;
   background-clip: padding-box !important;
   -webkit-appearance: none !important;
 }
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(75, 85, 99, 0.9) !important;
+  background-color: rgba(75, 85, 99, 0.55) !important;
 }
 
 .dark .table-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.75) !important;
+  background-color: rgba(156, 163, 175, 0.34) !important;
 }
 .dark .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(209, 213, 219, 0.9) !important;
+  background-color: rgba(209, 213, 219, 0.55) !important;
 }
 
-/* 3. 仅给真正的 Firefox 留的后路 */
 @supports (-moz-appearance:none) {
   .table-wrapper {
-    scrollbar-width: thin !important;
-    scrollbar-color: rgba(156, 163, 175, 0.5) rgba(0, 0, 0, 0.03) !important;
+    scrollbar-color: rgba(156, 163, 175, 0.45) transparent !important;
   }
   .dark .table-wrapper {
-    scrollbar-color: rgba(75, 85, 99, 0.5) rgba(255, 255, 255, 0.05) !important;
+    scrollbar-color: rgba(156, 163, 175, 0.42) transparent !important;
   }
 }
 </style>

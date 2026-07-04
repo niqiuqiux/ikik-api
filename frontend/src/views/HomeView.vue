@@ -138,25 +138,6 @@
     </main>
 
     <footer class="home-shell home-footer">
-      <section class="footer-intro">
-        <div>
-          <h2>{{ t('home.footer.title', { siteName }) }}</h2>
-          <p>{{ t('home.footer.description') }}</p>
-        </div>
-      </section>
-
-      <section class="footer-info-grid" :aria-label="t('home.footer.infoAria')">
-        <article v-for="item in footerInfoItems" :key="item.title" class="footer-info-card">
-          <span class="footer-info-icon" aria-hidden="true">
-            <Icon :name="item.icon" size="md" />
-          </span>
-          <div>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.description }}</p>
-          </div>
-        </article>
-      </section>
-
       <section class="footer-meta">
         <div class="footer-meta-group">
           <span>{{ t('home.footer.baseUrlLabel') }}</span>
@@ -170,7 +151,7 @@
       </section>
 
       <div class="footer-legal">
-        <span>&copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}</span>
+        <span>&copy; {{ currentYear }} {{ siteName }} {{ t('home.footer.allRightsReserved') }}</span>
         <span>{{ t('home.footer.serviceNotice') }}</span>
       </div>
     </footer>
@@ -185,8 +166,6 @@ import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { getPublicTodayStats } from '@/api/usage'
-
-type FooterInfoIcon = 'bolt' | 'creditCard' | 'shield'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -262,28 +241,6 @@ const endpointRows = computed(() => [
   { method: 'POST', path: '/v1/responses', label: 'Responses' },
   { method: 'GET', path: '/v1/models', label: 'Models' },
   { method: 'GET', path: '/key-usage', label: 'Usage' }
-])
-
-const footerInfoItems = computed<Array<{
-  icon: FooterInfoIcon
-  title: string
-  description: string
-}>>(() => [
-  {
-    icon: 'bolt',
-    title: t('home.footer.cards.access.title'),
-    description: t('home.footer.cards.access.desc')
-  },
-  {
-    icon: 'creditCard',
-    title: t('home.footer.cards.billing.title'),
-    description: t('home.footer.cards.billing.desc')
-  },
-  {
-    icon: 'shield',
-    title: t('home.footer.cards.reliability.title'),
-    description: t('home.footer.cards.reliability.desc')
-  }
 ])
 
 const currentYear = computed(() => new Date().getFullYear())
@@ -553,6 +510,57 @@ onMounted(() => {
 .icon-action:hover {
   transform: translateY(-1px);
   background: var(--paper);
+  color: var(--text);
+}
+
+.home-locale {
+  position: relative;
+  z-index: 20;
+  color: var(--muted);
+}
+
+.home-locale :deep(.app-header-control) {
+  min-width: 42px;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  backdrop-filter: blur(14px);
+  color: var(--muted);
+  padding: 0 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+}
+
+.home-locale :deep(.app-header-control:hover) {
+  background: var(--paper);
+  color: var(--text);
+}
+
+.home-locale :deep(.dropdown) {
+  right: 0;
+  min-width: 9.25rem;
+  border-color: var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  padding: 6px;
+  color: var(--text);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(18px);
+}
+
+.home-locale :deep(.dropdown button) {
+  border-radius: 12px;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.home-locale :deep(.dropdown button:hover) {
+  background: var(--paper-2);
+  color: var(--text);
+}
+
+.home-locale :deep(.dropdown button[class*="bg-primary"]) {
+  background: var(--accent-soft);
   color: var(--text);
 }
 
@@ -898,77 +906,6 @@ onMounted(() => {
   font-size: 0.88rem;
 }
 
-.footer-intro {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--paper) 94%, transparent), color-mix(in srgb, var(--paper-2) 78%, transparent)),
-    radial-gradient(circle at 12% 20%, rgba(16, 163, 127, 0.1), transparent 36%);
-  padding: 26px;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.06);
-}
-
-.footer-intro h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.45rem, 2vw, 2.15rem);
-  font-weight: 720;
-  letter-spacing: 0;
-}
-
-.footer-intro p {
-  max-width: 720px;
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 0.96rem;
-  line-height: 1.7;
-}
-
-.footer-info-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.footer-info-card {
-  display: flex;
-  min-width: 0;
-  gap: 14px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--paper) 68%, transparent);
-  padding: 18px;
-}
-
-.footer-info-icon {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.footer-info-card h3 {
-  margin: 0;
-  color: var(--text);
-  font-size: 0.98rem;
-  font-weight: 680;
-}
-
-.footer-info-card p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 0.84rem;
-  line-height: 1.62;
-}
-
 .footer-meta {
   display: flex;
   align-items: center;
@@ -1154,7 +1091,6 @@ onMounted(() => {
   }
 
   .home-nav-links,
-  .home-locale,
   .nav-cta {
     display: none;
   }
@@ -1280,15 +1216,6 @@ onMounted(() => {
     grid-template-columns: auto minmax(0, 1fr) auto;
     border-radius: 12px;
     padding: 9px;
-  }
-
-  .footer-intro {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .footer-info-grid {
-    grid-template-columns: 1fr;
   }
 
   .footer-meta,

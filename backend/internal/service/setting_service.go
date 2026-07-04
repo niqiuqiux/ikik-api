@@ -625,6 +625,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorEnabled,
 		SettingKeyChannelMonitorDefaultIntervalSeconds,
 		SettingKeyAvailableChannelsEnabled,
+		SettingKeyFreeModelsEnabled,
 		SettingKeyCarpoolEnabled,
 		SettingKeyCarpoolBaseServiceFeeUSD,
 		SettingKeyCarpoolSystemProxyFeeUSD,
@@ -732,6 +733,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ChannelMonitorDefaultIntervalSeconds: parseChannelMonitorInterval(settings[SettingKeyChannelMonitorDefaultIntervalSeconds]),
 
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
+		FreeModelsEnabled:        settings[SettingKeyFreeModelsEnabled] == "true",
 
 		CarpoolEnabled:           settings[SettingKeyCarpoolEnabled] == "true",
 		CarpoolBaseServiceFeeUSD: parseNonNegativeSettingFloat(settings[SettingKeyCarpoolBaseServiceFeeUSD], CarpoolBaseServiceFeeUSDDefault),
@@ -928,6 +930,7 @@ type PublicSettingsInjectionPayload struct {
 	ChannelMonitorEnabled                bool    `json:"channel_monitor_enabled"`
 	ChannelMonitorDefaultIntervalSeconds int     `json:"channel_monitor_default_interval_seconds"`
 	AvailableChannelsEnabled             bool    `json:"available_channels_enabled"`
+	FreeModelsEnabled                    bool    `json:"free_models_enabled"`
 	CarpoolEnabled                       bool    `json:"carpool_enabled"`
 	CarpoolBaseServiceFeeUSD             float64 `json:"carpool_base_service_fee_usd"`
 	CarpoolSystemProxyFeeUSD             float64 `json:"carpool_system_proxy_fee_usd"`
@@ -993,6 +996,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorEnabled:                settings.ChannelMonitorEnabled,
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
+		FreeModelsEnabled:                    settings.FreeModelsEnabled,
 		CarpoolEnabled:                       settings.CarpoolEnabled,
 		CarpoolBaseServiceFeeUSD:             settings.CarpoolBaseServiceFeeUSD,
 		CarpoolSystemProxyFeeUSD:             settings.CarpoolSystemProxyFeeUSD,
@@ -1632,6 +1636,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// Available channels feature switch
 	updates[SettingKeyAvailableChannelsEnabled] = strconv.FormatBool(settings.AvailableChannelsEnabled)
+	updates[SettingKeyFreeModelsEnabled] = strconv.FormatBool(settings.FreeModelsEnabled)
 
 	settings.AutoModelSettings = NormalizeAutoModelSettings(settings.AutoModelSettings)
 	autoModelSettingsJSON, err := json.Marshal(settings.AutoModelSettings)
@@ -2497,6 +2502,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
+		SettingKeyFreeModelsEnabled:        "false",
 		SettingKeyAutoModelSettings:        DefaultAutoModelSettingsJSON(),
 
 		// Carpool pools feature (default disabled; opt-in)
@@ -2904,6 +2910,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Available channels feature (default: disabled; strict true)
 	result.AvailableChannelsEnabled = settings[SettingKeyAvailableChannelsEnabled] == "true"
+	result.FreeModelsEnabled = settings[SettingKeyFreeModelsEnabled] == "true"
 	result.AutoModelSettings = ParseAutoModelSettings(settings[SettingKeyAutoModelSettings])
 
 	// Carpool pools feature (default: disabled; strict true)

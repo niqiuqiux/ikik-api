@@ -265,6 +265,160 @@ function mockUsageInfo(): Record<string, unknown> {
   }
 }
 
+function mockDashboardStats(): Record<string, unknown> {
+  return {
+    total_users: 128,
+    today_new_users: 6,
+    active_users: 42,
+    hourly_active_users: 12,
+    stats_updated_at: nowISO(),
+    stats_stale: false,
+    total_api_keys: 86,
+    active_api_keys: 79,
+    total_accounts: Math.max(mockAccounts.length, 12),
+    normal_accounts: Math.max(mockAccounts.length, 10),
+    error_accounts: 1,
+    ratelimit_accounts: 1,
+    overload_accounts: 0,
+    total_requests: 128000,
+    total_input_tokens: 184000000,
+    total_output_tokens: 92000000,
+    total_cache_creation_tokens: 12000000,
+    total_cache_read_tokens: 38000000,
+    total_tokens: 326000000,
+    total_cost: 860,
+    total_actual_cost: 512,
+    total_account_cost: 384,
+    today_requests: 1280,
+    today_input_tokens: 1840000,
+    today_output_tokens: 920000,
+    today_cache_creation_tokens: 120000,
+    today_cache_read_tokens: 380000,
+    today_tokens: 3260000,
+    today_cost: 8.6,
+    today_actual_cost: 5.12,
+    today_account_cost: 3.84,
+    average_duration_ms: 5400,
+    uptime: 86400,
+    rpm: 18,
+    tpm: 52000
+  }
+}
+
+function mockTrend(granularity: string): Array<Record<string, unknown>> {
+  const now = new Date()
+  return Array.from({ length: granularity === 'hour' ? 12 : 7 }, (_, index) => {
+    const date = new Date(now)
+    if (granularity === 'hour') {
+      date.setHours(now.getHours() - (11 - index), 0, 0, 0)
+    } else {
+      date.setDate(now.getDate() - (6 - index))
+    }
+    const requests = 120 + index * 18
+    return {
+      date: granularity === 'hour' ? date.toISOString() : date.toISOString().slice(0, 10),
+      requests,
+      input_tokens: requests * 900,
+      output_tokens: requests * 460,
+      cache_creation_tokens: requests * 80,
+      cache_read_tokens: requests * 220,
+      total_tokens: requests * 1660,
+      cost: Number((requests * 0.006).toFixed(4)),
+      actual_cost: Number((requests * 0.004).toFixed(4))
+    }
+  })
+}
+
+function mockModelStats(): Array<Record<string, unknown>> {
+  return [
+    {
+      model: 'gpt-5.5',
+      requests: 620,
+      input_tokens: 920000,
+      output_tokens: 410000,
+      cache_creation_tokens: 72000,
+      cache_read_tokens: 180000,
+      total_tokens: 1582000,
+      cost: 4.2,
+      actual_cost: 2.8,
+      account_cost: 2.1
+    },
+    {
+      model: 'claude-sonnet-4.6',
+      requests: 420,
+      input_tokens: 680000,
+      output_tokens: 330000,
+      cache_creation_tokens: 48000,
+      cache_read_tokens: 120000,
+      total_tokens: 1178000,
+      cost: 3.1,
+      actual_cost: 1.9,
+      account_cost: 1.4
+    }
+  ]
+}
+
+function mockUserTrend(granularity: string): Array<Record<string, unknown>> {
+  return mockTrend(granularity).flatMap((point, index) => [
+    {
+      date: point.date,
+      user_id: 1,
+      email: 'admin@local.test',
+      username: 'local-admin',
+      requests: Number(point.requests),
+      tokens: Number(point.total_tokens),
+      cost: Number(point.cost),
+      actual_cost: Number(point.actual_cost)
+    },
+    {
+      date: point.date,
+      user_id: 2,
+      email: 'user@local.test',
+      username: 'local-user',
+      requests: Math.max(20, Number(point.requests) - 45 - index * 3),
+      tokens: Math.max(20000, Number(point.total_tokens) - 46000 - index * 5000),
+      cost: Math.max(0.1, Number(point.cost) - 0.18),
+      actual_cost: Math.max(0.08, Number(point.actual_cost) - 0.12)
+    }
+  ])
+}
+
+function mockAccountSharingDashboard(url: URL): Record<string, unknown> {
+  const page = Math.max(1, Number(url.searchParams.get('account_page') || 1))
+  const pageSize = Math.max(1, Number(url.searchParams.get('account_page_size') || 20))
+  return {
+    summary: {
+      owned_accounts: mockAccounts.length,
+      private_accounts: mockAccounts.length,
+      public_pending_accounts: 0,
+      public_approved_accounts: 0,
+      public_suspended_accounts: 0,
+      self_requests: 0,
+      self_tokens: 0,
+      self_actual_cost: 0,
+      self_account_cost: 0,
+      external_requests: 0,
+      external_consumer_charge: 0,
+      external_account_cost: 0,
+      external_owner_credit: 0,
+      external_platform_fee: 0,
+      total_account_cost: 0,
+      balance_net_change: 0
+    },
+    accounts: [],
+    accounts_pagination: {
+      total: 0,
+      page,
+      page_size: pageSize,
+      pages: 1
+    },
+    trend: [],
+    start_date: url.searchParams.get('start_date') || '',
+    end_date: url.searchParams.get('end_date') || '',
+    granularity: url.searchParams.get('granularity') || 'day'
+  }
+}
+
 function sendJson(res: ServerResponse, status: number, payload: unknown): void {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
@@ -375,10 +529,186 @@ function localMockApiPlugin(enabled: boolean): Plugin {
           sendJson(res, 200, success({
             today_requests: 1280,
             today_tokens: 2480000,
+            success_count: 1270,
+            error_count: 10,
             success_rate: 99.2,
             average_duration_ms: 5400,
-            average_first_token_ms: 1.2
+            average_first_token_ms: 1200,
+            timezone: 'Asia/Shanghai'
           }))
+          return
+        }
+
+        if (path === '/api/v1/admin/system/check-updates') {
+          sendJson(res, 200, success({
+            current_version: '1.0.1-local',
+            latest_version: '1.0.1-local',
+            update_available: false
+          }))
+          return
+        }
+
+        if (path === '/api/v1/admin/settings') {
+          sendJson(res, 200, success(localPublicSettings(req)))
+          return
+        }
+
+        if (path === '/api/v1/admin/dashboard/snapshot-v2') {
+          const startDate = url.searchParams.get('start_date') || ''
+          const endDate = url.searchParams.get('end_date') || ''
+          const granularity = url.searchParams.get('granularity') || 'day'
+          sendJson(res, 200, success({
+            generated_at: nowISO(),
+            start_date: startDate,
+            end_date: endDate,
+            granularity,
+            stats: mockDashboardStats(),
+            trend: mockTrend(granularity),
+            models: mockModelStats(),
+            groups: [],
+            users_trend: []
+          }))
+          return
+        }
+
+        if (path === '/api/v1/admin/dashboard/users-trend') {
+          const startDate = url.searchParams.get('start_date') || ''
+          const endDate = url.searchParams.get('end_date') || ''
+          const granularity = url.searchParams.get('granularity') || 'day'
+          sendJson(res, 200, success({
+            trend: mockUserTrend(granularity),
+            start_date: startDate,
+            end_date: endDate,
+            granularity
+          }))
+          return
+        }
+
+        if (path === '/api/v1/admin/dashboard/users-ranking') {
+          sendJson(res, 200, success({
+            ranking: [
+              {
+                user_id: 1,
+                email: 'admin@local.test',
+                actual_cost: 3.42,
+                requests: 860,
+                tokens: 2140000
+              },
+              {
+                user_id: 2,
+                email: 'user@local.test',
+                actual_cost: 1.7,
+                requests: 420,
+                tokens: 1120000
+              }
+            ],
+            total_actual_cost: 5.12,
+            total_requests: 1280,
+            total_tokens: 3260000,
+            start_date: url.searchParams.get('start_date') || '',
+            end_date: url.searchParams.get('end_date') || ''
+          }))
+          return
+        }
+
+        if (path === '/api/v1/admin/dashboard/models') {
+          sendJson(res, 200, success({
+            models: mockModelStats(),
+            start_date: url.searchParams.get('start_date') || '',
+            end_date: url.searchParams.get('end_date') || ''
+          }))
+          return
+        }
+
+        if (path === '/api/v1/admin/dashboard/user-breakdown') {
+          sendJson(res, 200, success({
+            users: [
+              {
+                user_id: 1,
+                email: 'admin@local.test',
+                requests: 860,
+                total_tokens: 2140000,
+                cost: 4.8,
+                actual_cost: 3.42,
+                account_cost: 2.6
+              },
+              {
+                user_id: 2,
+                email: 'user@local.test',
+                requests: 420,
+                total_tokens: 1120000,
+                cost: 2.1,
+                actual_cost: 1.7,
+                account_cost: 1.24
+              }
+            ],
+            start_date: url.searchParams.get('start_date') || '',
+            end_date: url.searchParams.get('end_date') || ''
+          }))
+          return
+        }
+
+        if (path === '/api/v1/usage/dashboard/stats') {
+          const stats = mockDashboardStats()
+          sendJson(res, 200, success({
+            total_api_keys: stats.total_api_keys,
+            active_api_keys: stats.active_api_keys,
+            total_requests: stats.total_requests,
+            total_input_tokens: stats.total_input_tokens,
+            total_output_tokens: stats.total_output_tokens,
+            total_cache_creation_tokens: stats.total_cache_creation_tokens,
+            total_cache_read_tokens: stats.total_cache_read_tokens,
+            total_tokens: stats.total_tokens,
+            total_cost: stats.total_cost,
+            total_actual_cost: stats.total_actual_cost,
+            today_requests: stats.today_requests,
+            today_input_tokens: stats.today_input_tokens,
+            today_output_tokens: stats.today_output_tokens,
+            today_cache_creation_tokens: stats.today_cache_creation_tokens,
+            today_cache_read_tokens: stats.today_cache_read_tokens,
+            today_tokens: stats.today_tokens,
+            today_cost: stats.today_cost,
+            today_actual_cost: stats.today_actual_cost,
+            today_platforms: [
+              { platform: 'openai', requests: 860, input_tokens: 1200000, output_tokens: 620000, cache_creation_tokens: 80000, cache_read_tokens: 260000, total_tokens: 2160000, cost: 5.8, actual_cost: 3.42 },
+              { platform: 'anthropic', requests: 420, input_tokens: 640000, output_tokens: 300000, cache_creation_tokens: 40000, cache_read_tokens: 120000, total_tokens: 1100000, cost: 2.8, actual_cost: 1.7 }
+            ],
+            average_duration_ms: stats.average_duration_ms,
+            rpm: stats.rpm,
+            tpm: stats.tpm
+          }))
+          return
+        }
+
+        if (path === '/api/v1/usage/dashboard/trend') {
+          const startDate = url.searchParams.get('start_date') || ''
+          const endDate = url.searchParams.get('end_date') || ''
+          const granularity = url.searchParams.get('granularity') || 'day'
+          sendJson(res, 200, success({
+            trend: mockTrend(granularity),
+            start_date: startDate,
+            end_date: endDate,
+            granularity
+          }))
+          return
+        }
+
+        if (path === '/api/v1/usage/dashboard/models') {
+          sendJson(res, 200, success({
+            models: mockModelStats(),
+            start_date: url.searchParams.get('start_date') || '',
+            end_date: url.searchParams.get('end_date') || ''
+          }))
+          return
+        }
+
+        if (path === '/api/v1/usage/dashboard/account-sharing') {
+          sendJson(res, 200, success(mockAccountSharingDashboard(url)))
+          return
+        }
+
+        if (path === '/api/v1/usage') {
+          sendJson(res, 200, success(paginateItems([], url)))
           return
         }
 

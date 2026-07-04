@@ -12,17 +12,17 @@
           <!-- Total API Keys -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-primary-100 p-2 dark:bg-primary-900/30">
-                <Icon name="key" size="md" class="text-primary-600 dark:text-primary-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-primary-soft)] p-2">
+	                <Icon name="key" size="md" class="text-[var(--app-primary)]" :stroke-width="2" />
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.apiKeys') }}
                 </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
+	                <p class="text-xl font-bold text-[var(--app-text)]">
                   {{ stats.total_api_keys }}
                 </p>
-                <p class="text-xs text-accent-600 dark:text-accent-300">
+	                <p class="text-xs text-[var(--app-primary-hover)]">
                   {{ stats.active_api_keys }} {{ t('common.active') }}
                 </p>
               </div>
@@ -32,18 +32,18 @@
           <!-- Service Accounts -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-accent-100 p-2 dark:bg-accent-900/30">
-                <Icon name="server" size="md" class="text-accent-600 dark:text-accent-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-surface-muted)] p-2">
+	                <Icon name="server" size="md" class="text-[var(--app-muted-strong)]" :stroke-width="2" />
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.accounts') }}
                 </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
+	                <p class="text-xl font-bold text-[var(--app-text)]">
                   {{ stats.total_accounts }}
                 </p>
                 <p class="text-xs">
-                  <span class="text-accent-600 dark:text-accent-300"
+	                  <span class="text-[var(--app-primary-hover)]"
                     >{{ stats.normal_accounts }} {{ t('common.active') }}</span
                   >
                   <span v-if="stats.error_accounts > 0" class="ml-1 text-red-500"
@@ -57,17 +57,17 @@
           <!-- Today Requests -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-accent-100 p-2 dark:bg-accent-900/30">
-                <Icon name="chart" size="md" class="text-accent-600 dark:text-accent-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-surface-muted)] p-2">
+	                <Icon name="chart" size="md" class="text-[var(--app-muted-strong)]" :stroke-width="2" />
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.todayRequests') }}
                 </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
+	                <p class="text-xl font-bold text-[var(--app-text)]">
                   {{ stats.today_requests }}
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+	                <p class="text-xs text-[var(--app-muted)]">
                   {{ t('common.total') }}: {{ formatNumber(stats.total_requests) }}
                 </p>
               </div>
@@ -77,17 +77,17 @@
           <!-- New Users Today -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-primary-100 p-2 dark:bg-primary-900/30">
-                <Icon name="userPlus" size="md" class="text-primary-600 dark:text-primary-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-primary-soft)] p-2">
+	                <Icon name="userPlus" size="md" class="text-[var(--app-primary)]" :stroke-width="2" />
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.users') }}
                 </p>
-                <p class="text-xl font-bold text-primary-600 dark:text-primary-300">
+	                <p class="text-xl font-bold text-[var(--app-primary-hover)]">
                   +{{ stats.today_new_users }}
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+	                <p class="text-xs text-[var(--app-muted)]">
                   {{ t('common.total') }}: {{ formatNumber(stats.total_users) }}
                 </p>
               </div>
@@ -100,31 +100,31 @@
           <!-- Today Tokens -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-primary-100 p-2 dark:bg-primary-900/30">
-                <Icon name="cube" size="md" class="text-primary-600 dark:text-primary-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-primary-soft)] p-2">
+	                <Icon name="cube" size="md" class="text-[var(--app-primary)]" :stroke-width="2" />
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.todayTokens') }}
                 </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
+	                <p class="text-xl font-bold text-[var(--app-text)]">
                   {{ formatTokens(stats.today_tokens) }}
                 </p>
                 <p class="text-xs">
                   <span
-                    class="text-accent-600 dark:text-accent-300"
+	                    class="text-[var(--app-primary-hover)]"
                     :title="t('admin.dashboard.actual')"
                     >${{ formatCost(stats.today_actual_cost) }}</span
                   >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
+	                  <span class="text-[var(--app-muted)]"> / </span>
                   <span
-                    class="text-primary-500 dark:text-primary-300"
+	                    class="text-[var(--app-primary)]"
                     :title="t('admin.dashboard.accountCost')"
                     >${{ formatCost(stats.today_account_cost) }}</span
                   >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
+	                  <span class="text-[var(--app-muted)]"> / </span>
                   <span
-                    class="text-gray-400 dark:text-gray-500"
+	                    class="text-[var(--app-muted)]"
                     :title="t('admin.dashboard.standard')"
                     >${{ formatCost(stats.today_cost) }}</span
                   >
@@ -136,31 +136,31 @@
           <!-- Total Tokens -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-gray-100 p-2 dark:bg-gray-900/30">
-                <Icon name="database" size="md" class="text-gray-600 dark:text-gray-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-surface-muted)] p-2">
+	                <Icon name="database" size="md" class="text-[var(--app-muted-strong)]" :stroke-width="2" />
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.totalTokens') }}
                 </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
+	                <p class="text-xl font-bold text-[var(--app-text)]">
                   {{ formatTokens(stats.total_tokens) }}
                 </p>
                 <p class="text-xs">
                   <span
-                    class="text-accent-600 dark:text-accent-300"
+	                    class="text-[var(--app-primary-hover)]"
                     :title="t('admin.dashboard.actual')"
                     >${{ formatCost(stats.total_actual_cost) }}</span
                   >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
+	                  <span class="text-[var(--app-muted)]"> / </span>
                   <span
-                    class="text-primary-500 dark:text-primary-300"
+	                    class="text-[var(--app-primary)]"
                     :title="t('admin.dashboard.accountCost')"
                     >${{ formatCost(stats.total_account_cost) }}</span
                   >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
+	                  <span class="text-[var(--app-muted)]"> / </span>
                   <span
-                    class="text-gray-400 dark:text-gray-500"
+	                    class="text-[var(--app-muted)]"
                     :title="t('admin.dashboard.standard')"
                     >${{ formatCost(stats.total_cost) }}</span
                   >
@@ -172,24 +172,24 @@
           <!-- Performance (RPM/TPM) -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-primary-100 p-2 dark:bg-primary-900/30">
-                <Icon name="bolt" size="md" class="text-primary-600 dark:text-primary-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-primary-soft)] p-2">
+	                <Icon name="bolt" size="md" class="text-[var(--app-primary)]" :stroke-width="2" />
               </div>
               <div class="flex-1">
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.performance') }}
                 </p>
                 <div class="flex items-baseline gap-2">
-                  <p class="text-xl font-bold text-gray-900 dark:text-white">
+	                  <p class="text-xl font-bold text-[var(--app-text)]">
                     {{ formatTokens(stats.rpm) }}
                   </p>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
+	                  <span class="text-xs text-[var(--app-muted)]">RPM</span>
                 </div>
                 <div class="flex items-baseline gap-2">
-                  <p class="text-sm font-semibold text-primary-600 dark:text-primary-300">
+	                  <p class="text-sm font-semibold text-[var(--app-primary-hover)]">
                     {{ formatTokens(stats.tpm) }}
                   </p>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">TPM</span>
+	                  <span class="text-xs text-[var(--app-muted)]">TPM</span>
                 </div>
               </div>
             </div>
@@ -198,17 +198,17 @@
           <!-- Avg Response Time -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-accent-100 p-2 dark:bg-accent-900/30">
-                <Icon name="clock" size="md" class="text-accent-600 dark:text-accent-300" :stroke-width="2" />
+	              <div class="rounded-xl bg-[var(--app-surface-muted)] p-2">
+	                <Icon name="clock" size="md" class="text-[var(--app-muted-strong)]" :stroke-width="2" />
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+	                <p class="text-xs font-medium text-[var(--app-muted)]">
                   {{ t('admin.dashboard.avgResponse') }}
                 </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
+	                <p class="text-xl font-bold text-[var(--app-text)]">
                   {{ formatDuration(stats.average_duration_ms) }}
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+	                <p class="text-xs text-[var(--app-muted)]">
                   {{ stats.active_users }} {{ t('admin.dashboard.activeUsers') }}
                 </p>
               </div>
@@ -222,7 +222,7 @@
           <div class="card p-4">
             <div class="flex flex-wrap items-center gap-4">
               <div class="flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+	                <span class="text-sm font-medium text-[var(--app-muted-strong)]"
                   >{{ t('admin.dashboard.timeRange') }}:</span
                 >
                 <DateRangePicker
@@ -235,7 +235,7 @@
                 {{ t('common.refresh') }}
               </button>
               <div class="ml-auto flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+	                <span class="text-sm font-medium text-[var(--app-muted-strong)]"
                   >{{ t('admin.dashboard.granularity') }}:</span
                 >
                 <div class="w-28">
@@ -270,7 +270,7 @@
 
           <!-- User Usage Trend (Full Width) -->
           <div class="card p-4">
-            <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+            <h3 class="mb-4 text-sm font-semibold text-[var(--app-text)]">
               {{ t('admin.dashboard.recentUsage') }} (Top 12)
             </h3>
             <div class="h-64">
@@ -280,7 +280,7 @@
               <Line v-else-if="userTrendChartData" :data="userTrendChartData" :options="lineOptions" />
               <div
                 v-else
-                class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+                class="flex h-full items-center justify-center text-sm text-[var(--app-muted)]"
               >
                 {{ t('admin.dashboard.noDataAvailable') }}
               </div>
