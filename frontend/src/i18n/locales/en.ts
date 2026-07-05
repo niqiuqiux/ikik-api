@@ -1208,6 +1208,24 @@ export default {
     groupLabel: 'Group',
     selectGroup: 'Select a group',
     privateGroupDescription: '{platform} private group routes personal account group',
+    groupRouting: {
+      title: 'Multi-group routing',
+      description: 'Enable priority and weight based routing across multiple groups for the same key.',
+      routeConfig: 'Route configuration',
+      enabled: 'Enabled',
+      group: 'Group',
+      priority: 'Priority',
+      weight: 'Weight',
+      cooldownSeconds: 'Cooldown seconds',
+      addRoute: 'Add route',
+      errors: {
+        missingGroup: 'A multi-group route is missing a group.',
+        duplicateGroup: 'Multi-group routing cannot contain duplicate groups.',
+        invalidPriority: 'Multi-group route priority must be an integer greater than or equal to 0.',
+        invalidWeight: 'Multi-group route weight must be an integer greater than or equal to 1.',
+        invalidCooldown: 'Multi-group route cooldown seconds must be an integer greater than or equal to 0.'
+      }
+    },
     statusLabel: 'Status',
     selectStatus: 'Select status',
     saving: 'Saving...',

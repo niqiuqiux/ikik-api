@@ -452,9 +452,9 @@
 	        <div class="space-y-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 sm:p-5">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
-	              <label class="text-sm font-medium text-[var(--app-text)]">多分组路由</label>
+	              <label class="text-sm font-medium text-[var(--app-text)]">{{ t('keys.groupRouting.title') }}</label>
 	              <p class="mt-1 max-w-2xl text-xs leading-5 text-[var(--app-muted)]">
-                开启后可按优先级和权重为同一个 Key 配置多个分组
+                {{ t('keys.groupRouting.description') }}
               </p>
             </div>
             <button
@@ -485,7 +485,7 @@
 	                  <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--app-primary-soft)] px-2 text-xs font-medium text-[var(--app-primary-hover)]">
                     {{ index + 1 }}
                   </span>
-	                  <span class="text-sm font-medium text-[var(--app-text)]">路由配置</span>
+	                  <span class="text-sm font-medium text-[var(--app-text)]">{{ t('keys.groupRouting.routeConfig') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
 	                  <label class="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 text-sm text-[var(--app-muted-strong)]">
@@ -494,7 +494,7 @@
                       type="checkbox"
                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
-                    启用
+                    {{ t('keys.groupRouting.enabled') }}
                   </label>
                   <button
                     type="button"
@@ -509,7 +509,7 @@
 
               <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(16rem,1fr)_8rem_8rem_9rem]">
                 <div class="md:col-span-2 lg:col-span-1">
-	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">分组</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">{{ t('keys.groupRouting.group') }}</label>
                   <Select
                     v-model="route.group_id"
                     :options="groupOptions"
@@ -543,7 +543,7 @@
                   </Select>
                 </div>
                 <div>
-	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">优先级</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">{{ t('keys.groupRouting.priority') }}</label>
                   <input
                     v-model.number="route.priority"
                     type="number"
@@ -553,7 +553,7 @@
                   />
                 </div>
                 <div>
-	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">权重</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">{{ t('keys.groupRouting.weight') }}</label>
                   <input
                     v-model.number="route.weight"
                     type="number"
@@ -563,7 +563,7 @@
                   />
                 </div>
                 <div>
-	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">冷却秒数</label>
+	                  <label class="mb-1 block text-xs text-[var(--app-muted)]">{{ t('keys.groupRouting.cooldownSeconds') }}</label>
                   <input
                     v-model.number="route.cooldown_seconds"
                     type="number"
@@ -576,7 +576,7 @@
             </div>
             <button type="button" class="btn btn-secondary w-full sm:w-auto" @click="addGroupRoute">
               <Icon name="plus" size="sm" class="mr-2" />
-              添加路由
+              {{ t('keys.groupRouting.addRoute') }}
             </button>
           </div>
         </div>
@@ -1472,23 +1472,23 @@ const normalizeGroupRoutes = (): ApiKeyGroupRoute[] | null => {
   const seenGroupIds = new Set<number>()
   for (const route of formData.value.group_routes) {
     if (route.group_id === null) {
-      appStore.showError('多分组路由中存在未选择的分组')
+      appStore.showError(t('keys.groupRouting.errors.missingGroup'))
       return null
     }
     if (seenGroupIds.has(route.group_id)) {
-      appStore.showError('多分组路由不能包含重复分组')
+      appStore.showError(t('keys.groupRouting.errors.duplicateGroup'))
       return null
     }
     if (!Number.isInteger(route.priority) || route.priority < 0) {
-      appStore.showError('多分组路由优先级必须是不小于 0 的整数')
+      appStore.showError(t('keys.groupRouting.errors.invalidPriority'))
       return null
     }
     if (!Number.isInteger(route.weight) || route.weight < 1) {
-      appStore.showError('多分组路由权重必须是不小于 1 的整数')
+      appStore.showError(t('keys.groupRouting.errors.invalidWeight'))
       return null
     }
     if (!Number.isInteger(route.cooldown_seconds) || route.cooldown_seconds < 0) {
-      appStore.showError('多分组路由冷却秒数必须是不小于 0 的整数')
+      appStore.showError(t('keys.groupRouting.errors.invalidCooldown'))
       return null
     }
     seenGroupIds.add(route.group_id)

@@ -1208,6 +1208,24 @@ export default {
     groupLabel: '分组',
     selectGroup: '选择分组',
     privateGroupDescription: '{platform} 私用分组调度个人账号分组',
+    groupRouting: {
+      title: '多分组路由',
+      description: '开启后可按优先级和权重为同一个 Key 配置多个分组',
+      routeConfig: '路由配置',
+      enabled: '启用',
+      group: '分组',
+      priority: '优先级',
+      weight: '权重',
+      cooldownSeconds: '冷却秒数',
+      addRoute: '添加路由',
+      errors: {
+        missingGroup: '多分组路由中存在未选择的分组',
+        duplicateGroup: '多分组路由不能包含重复分组',
+        invalidPriority: '多分组路由优先级必须是不小于 0 的整数',
+        invalidWeight: '多分组路由权重必须是不小于 1 的整数',
+        invalidCooldown: '多分组路由冷却秒数必须是不小于 0 的整数'
+      }
+    },
     statusLabel: '状态',
     selectStatus: '选择状态',
     saving: '保存中...',

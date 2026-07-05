@@ -519,10 +519,9 @@ func TestPlatformDispatchCharacterization_AntigravityAPIKeyRoutesToGatewayForwar
 	require.Len(t, gwCalls, 1, "GatewayService 上游应被调用恰好一次")
 	require.Empty(t, env.agUpstream.recordedCalls(), "antigravity 上游不应被调用")
 
-	// APIKey 账号未配置 base_url 时直连 Anthropic 默认地址，认证走 x-api-key
-	// （setHeaderRaw 以小写原样写入 header map，须用原始 key 读取）
+	// APIKey 账号未配置 base_url 时直连 Anthropic 默认地址，认证走 x-api-key。
 	require.Equal(t, "https://api.anthropic.com/v1/messages?beta=true", gwCalls[0].URL)
-	require.Equal(t, []string{"ag-apikey-cred"}, gwCalls[0].Header["x-api-key"])
+	require.Equal(t, "ag-apikey-cred", gwCalls[0].Header.Get("x-api-key"))
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
