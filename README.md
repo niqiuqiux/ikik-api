@@ -11,6 +11,10 @@ ikik-api is a self-hosted AI API gateway and subscription management platform ba
 
 English | [中文](README_CN.md) | [日本語](README_JA.md)
 
+Website: [https://ikik.net](https://ikik.net)
+
+QQ group: `146499741`
+
 This repository is intended for private deployment, customization, and secondary development. It does not include production secrets, private server configuration, hosted-service credentials, or commercial operation data.
 
 ## Important Notice
@@ -209,3 +213,6 @@ This project follows the license included in [LICENSE](LICENSE).
 ## Acknowledgements
 
 ikik-api is based on Sub2API and extends it for self-hosted AI gateway, subscription, accounting, and operation workflows.
+
+- [PIXEL-API/PixelAPI](https://github.com/PIXEL-API/PixelAPI)
+- [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api)
