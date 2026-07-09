@@ -1,6 +1,6 @@
 # ikik-api
 
-![Go](https://img.shields.io/badge/Go-1.26.2-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8?logo=go&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white)
@@ -29,9 +29,10 @@ QQ グループ：`146499741`
 ## 機能
 
 - chat、responses、models、embeddings、image、ストリーミング用途に対応した OpenAI 互換ゲートウェイエンドポイント。
+- Grok OAuth、Kiro OAuth、無料モデルプロバイダーの接続、設定可能なプライベートアカウント接続フローに対応。
 - OpenAI 互換チャネルとアカウント型上流サービスに対応する複数プロバイダーのルーティング。
 - 公開、プライベート、所有、相乗り型スケジューリング概念を含むアカウントプール管理。
-- グループルーティング、クォータ制御、利用記録、課金メタデータを備えた API Key 管理。
+- 複数グループルーティング、IP アクセス制御、クォータ制御、利用記録、課金メタデータを備えた API Key 管理。
 - ユーザーサブスクリプション、チャージフロー、引換コード、招待報酬、ショップ/カードキー機能。
 - ユーザー、アカウント、チャネル、決済、モデレーション、リスクイベント、データ管理、システム設定を管理する管理ダッシュボード。
 - リクエスト/レスポンス監査のためのコンテンツモデレーションとリスク制御の統合ポイント。
@@ -39,9 +40,17 @@ QQ グループ：`146499741`
 - Vue 3、TypeScript、Pinia、Vue Router、Tailwind CSS、Vite によるフロントエンドコンソール。
 - Go、Gin、Ent、PostgreSQL、Redis とモジュール化されたサービス境界によるバックエンド。
 
+## 1.0.3 更新内容
+
+- バックエンドツールチェーンを Go 1.26.5 に更新し、ストレージ連携で利用する AWS SDK の脆弱性対応依存関係を更新。
+- Grok OAuth、Kiro OAuth、K12 アカウントレベル対応を追加し、動画関連ゲートウェイエンドポイントを補強。
+- 無料モデルプロバイダー接続、複数グループ API Key ルーティング、API Key IP アクセス制御を追加。
+- 相乗りプール、プライベートアカウント、サブスクリプション、課金、推論 Token、利用統計の処理を改善。
+- 現在の依存関係に合わせて CI、セキュリティスキャン、フロントエンド監査処理を更新。
+
 ## 技術スタック
 
-- バックエンド：Go 1.26.2、Gin、Ent、PostgreSQL、Redis
+- バックエンド：Go 1.26.5、Gin、Ent、PostgreSQL、Redis
 - フロントエンド：Vue 3、TypeScript、Vite、Pinia、Tailwind CSS
 - テスト：Go test、Vitest、vue-tsc、ESLint
 - デプロイ：Docker またはソースビルド。外部 PostgreSQL と Redis の利用を推奨
@@ -61,7 +70,7 @@ QQ グループ：`146499741`
 
 ## 要件
 
-- Go 1.26.2
+- Go 1.26.5
 - Node.js 20+
 - pnpm 9+
 - PostgreSQL

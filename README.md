@@ -1,6 +1,6 @@
 # ikik-api
 
-![Go](https://img.shields.io/badge/Go-1.26.2-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8?logo=go&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white)
@@ -29,9 +29,10 @@ Please read the following carefully before deploying or operating this project:
 ## Features
 
 - OpenAI-compatible gateway endpoints for chat, responses, models, embeddings, image, and streaming workloads.
+- Grok OAuth, Kiro OAuth, free-model provider onboarding, and configurable private-account access flows.
 - Multi-provider routing for OpenAI-compatible channels and account-based upstreams.
 - Account pool management with public, private, owned, and carpool-style scheduling concepts.
-- API key management with group routing, quota controls, usage records, and billing metadata.
+- API key management with multi-group routing, IP access controls, quota controls, usage records, and billing metadata.
 - User subscriptions, recharge flows, redeem codes, invitation rewards, and shop/card-key workflows.
 - Admin dashboard for users, accounts, channels, payments, moderation, risk events, data management, and system settings.
 - Content moderation and risk-control integration points for request/response auditing.
@@ -39,9 +40,17 @@ Please read the following carefully before deploying or operating this project:
 - Frontend console built with Vue 3, TypeScript, Pinia, Vue Router, Tailwind CSS, and Vite.
 - Backend service built with Go, Gin, Ent, PostgreSQL, Redis, and modular service boundaries.
 
+## Version 1.0.3 Updates
+
+- Upgraded the backend toolchain to Go 1.26.5 and refreshed vulnerable AWS SDK dependencies used by storage integrations.
+- Added Grok OAuth integration, Kiro OAuth integration, K12 account-level support, and video-related gateway endpoint coverage.
+- Added free-model provider onboarding, multi-group API key routing, and API Key IP access-control support.
+- Improved carpool pool, private account, subscription, billing, reasoning-token, and usage-stat workflows.
+- Updated CI, security scanning, and frontend audit handling for the current dependency set.
+
 ## Tech Stack
 
-- Backend: Go 1.26.2, Gin, Ent, PostgreSQL, Redis
+- Backend: Go 1.26.5, Gin, Ent, PostgreSQL, Redis
 - Frontend: Vue 3, TypeScript, Vite, Pinia, Tailwind CSS
 - Testing: Go test, Vitest, vue-tsc, ESLint
 - Deployment: Docker or source build, with external PostgreSQL and Redis recommended
@@ -61,7 +70,7 @@ Please read the following carefully before deploying or operating this project:
 
 ## Requirements
 
-- Go 1.26.2
+- Go 1.26.5
 - Node.js 20+
 - pnpm 9+
 - PostgreSQL

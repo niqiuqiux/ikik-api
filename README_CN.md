@@ -1,6 +1,6 @@
 # ikik-api
 
-![Go](https://img.shields.io/badge/Go-1.26.2-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8?logo=go&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white)
@@ -29,9 +29,10 @@ QQ 群：`146499741`
 ## 功能特性
 
 - 提供 OpenAI 兼容网关接口，支持 chat、responses、models、embeddings、image 和流式请求等场景。
+- 支持 Grok OAuth、Kiro OAuth、免费模型供应商接入和可配置的私有账号接入流程。
 - 支持 OpenAI 兼容渠道和账号型上游的多供应商路由。
 - 账号池管理，包含公共、私有、自有和拼车等调度概念。
-- API Key 管理，支持分组路由、额度控制、使用记录和计费元数据。
+- API Key 管理，支持多分组路由、IP 访问控制、额度控制、使用记录和计费元数据。
 - 用户订阅、充值流程、兑换码、邀请奖励和商城/卡密流程。
 - 管理后台覆盖用户、账号、渠道、支付、风控、风险事件、数据管理和系统设置。
 - 内容审查与风控接入点，支持请求/响应审计。
@@ -39,9 +40,17 @@ QQ 群：`146499741`
 - 前端控制台基于 Vue 3、TypeScript、Pinia、Vue Router、Tailwind CSS 和 Vite。
 - 后端服务基于 Go、Gin、Ent、PostgreSQL、Redis 和模块化服务边界。
 
+## 1.0.3 更新内容
+
+- 后端工具链升级到 Go 1.26.5，并更新存储集成相关的 AWS SDK 安全依赖。
+- 新增 Grok OAuth、Kiro OAuth、K12 账号等级支持，并补充视频相关网关端点覆盖。
+- 新增免费模型供应商接入、多分组 API Key 路由和 API Key IP 访问控制支持。
+- 优化拼车池、私有账号、订阅、计费、推理 Token 和用量统计相关流程。
+- 更新 CI、安全扫描和前端审计处理，匹配当前依赖版本。
+
 ## 技术栈
 
-- 后端：Go 1.26.2、Gin、Ent、PostgreSQL、Redis
+- 后端：Go 1.26.5、Gin、Ent、PostgreSQL、Redis
 - 前端：Vue 3、TypeScript、Vite、Pinia、Tailwind CSS
 - 测试：Go test、Vitest、vue-tsc、ESLint
 - 部署：Docker 或源码构建，推荐外置 PostgreSQL 和 Redis
@@ -61,7 +70,7 @@ QQ 群：`146499741`
 
 ## 环境要求
 
-- Go 1.26.2
+- Go 1.26.5
 - Node.js 20+
 - pnpm 9+
 - PostgreSQL
