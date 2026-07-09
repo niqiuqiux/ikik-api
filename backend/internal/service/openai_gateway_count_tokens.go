@@ -231,6 +231,7 @@ func (s *OpenAIGatewayService) buildInputTokensUpstreamRequest(
 			}
 		}
 	}
+	account.ApplyHeaderOverrides(req.Header)
 
 	return req, nil
 }

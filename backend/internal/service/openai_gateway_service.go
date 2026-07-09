@@ -937,8 +937,9 @@ func SnapshotOpenAICompatibilityFallbackMetrics() OpenAICompatibilityFallbackMet
 	}
 }
 
-func (s *OpenAIGatewayService) detectCodexClientRestriction(c *gin.Context, account *Account) CodexClientRestrictionDetectionResult {
-	return s.getCodexClientRestrictionDetector().Detect(c, account)
+func (s *OpenAIGatewayService) detectCodexClientRestriction(c *gin.Context, account *Account, body []byte) CodexClientRestrictionDetectionResult {
+	policy := CodexRestrictionPolicy{EngineFingerprintSignals: openai.DefaultEngineFingerprintSignals}
+	return s.getCodexClientRestrictionDetector().Detect(c, account, policy, body)
 }
 
 func getAPIKeyIDFromContext(c *gin.Context) int64 {
@@ -2331,14 +2332,14 @@ func (s *OpenAIGatewayService) handleFailoverSideEffects(ctx context.Context, re
 func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, account *Account, body []byte) (*OpenAIForwardResult, error) {
 	startTime := time.Now()
 
-	restrictionResult := s.detectCodexClientRestriction(c, account)
+	restrictionResult := s.detectCodexClientRestriction(c, account, body)
 	apiKeyID := getAPIKeyIDFromContext(c)
 	logCodexCLIOnlyDetection(ctx, c, account, apiKeyID, restrictionResult, body)
 	if restrictionResult.Enabled && !restrictionResult.Matched {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": gin.H{
 				"type":    "forbidden_error",
-				"message": "This account only allows Codex official clients",
+				"message": CodexClientRestrictionMessage(restrictionResult),
 			},
 		})
 		return nil, errors.New("codex_cli_only restriction: only codex official clients are allowed")
@@ -3415,6 +3416,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 	if req.Header.Get("content-type") == "" {
 		req.Header.Set("content-type", "application/json")
 	}
+	account.ApplyHeaderOverrides(req.Header)
 
 	return req, nil
 }
@@ -4133,6 +4135,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequest(ctx context.Context, c *gin.
 	if req.Header.Get("content-type") == "" {
 		req.Header.Set("content-type", "application/json")
 	}
+	account.ApplyHeaderOverrides(req.Header)
 
 	return req, nil
 }

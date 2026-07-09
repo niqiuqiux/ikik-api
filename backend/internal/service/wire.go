@@ -448,6 +448,20 @@ func ProvideAPIKeyAuthCacheInvalidator(apiKeyService *APIKeyService) APIKeyAuthC
 	return apiKeyService
 }
 
+func ProvideUsageService(
+	usageRepo UsageLogRepository,
+	userRepo UserRepository,
+	client *dbent.Client,
+	authCacheInvalidator APIKeyAuthCacheInvalidator,
+	settingRepo SettingRepository,
+	groupRepo GroupRepository,
+) *UsageService {
+	svc := NewUsageService(usageRepo, userRepo, client, authCacheInvalidator)
+	svc.SetSettingRepository(settingRepo)
+	svc.SetHomeStatsGroupReader(groupRepo)
+	return svc
+}
+
 func ProvideAPIKeyService(
 	apiKeyRepo APIKeyRepository,
 	userRepo UserRepository,
@@ -660,7 +674,7 @@ var ProviderSet = wire.NewSet(
 	NewProxyService,
 	NewRedeemService,
 	NewPromoService,
-	NewUsageService,
+	ProvideUsageService,
 	NewDashboardService,
 	ProvidePricingService,
 	NewBillingService,

@@ -561,6 +561,39 @@ export async function refreshAntigravityToken(
   return data
 }
 
+export async function generateGrokOAuthUrl(
+  payload?: UserOAuthProxyPayload & { redirect_uri?: string }
+): Promise<UserOAuthAuthUrlResponse> {
+  const { data } = await apiClient.post<UserOAuthAuthUrlResponse>(
+    '/account-oauth/grok/auth-url',
+    compactPayload(payload)
+  )
+  return data
+}
+
+export async function exchangeGrokOAuthCode(
+  payload: UserOAuthExchangeCodePayload
+): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.post<Record<string, unknown>>(
+    '/account-oauth/grok/exchange-code',
+    compactPayload(payload)
+  )
+  return data
+}
+
+export async function refreshGrokToken(
+  refreshToken: string,
+  proxyId?: number | null
+): Promise<Record<string, unknown>> {
+  const payload: { refresh_token: string; proxy_id?: number } = { refresh_token: refreshToken }
+  if (proxyId) payload.proxy_id = proxyId
+  const { data } = await apiClient.post<Record<string, unknown>>(
+    '/account-oauth/grok/refresh-token',
+    compactPayload(payload)
+  )
+  return data
+}
+
 export async function generateKiroOAuthUrl(
   payload?: UserKiroAuthUrlPayload
 ): Promise<UserOAuthAuthUrlResponse> {
@@ -665,6 +698,9 @@ export const accountsAPI = {
   generateAntigravityOAuthUrl,
   exchangeAntigravityOAuthCode,
   refreshAntigravityToken,
+  generateGrokOAuthUrl,
+  exchangeGrokOAuthCode,
+  refreshGrokToken,
   generateKiroOAuthUrl,
   generateKiroIDCAuthUrl,
   exchangeKiroOAuthCode,

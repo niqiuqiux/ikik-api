@@ -486,6 +486,33 @@
         </div>
       </div>
 
+      <div v-if="allHeaderOverrideCapable" class="border-t border-gray-200 pt-4 dark:border-dark-600">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex-1 pr-4">
+            <label class="input-label mb-0" for="bulk-edit-header-override-enabled">
+              {{ t('admin.accounts.headerOverride.title') }}
+            </label>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ t('admin.accounts.headerOverride.hint') }}
+            </p>
+          </div>
+          <input
+            v-model="enableHeaderOverride"
+            id="bulk-edit-header-override-enabled"
+            type="checkbox"
+            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+        </div>
+        <HeaderOverrideEditor
+          v-if="enableHeaderOverride"
+          v-model:enabled="headerOverrideEnabled"
+          v-model:rows="headerOverrideRows"
+          :platform="headerOverrideTemplatePlatform"
+          bulk
+          class="border-t-0 pt-0"
+        />
+      </div>
+
       <!-- Proxy -->
       <div v-if="canManageProxy" class="border-t border-gray-200 pt-4 dark:border-dark-600">
         <div class="mb-3 flex items-center justify-between">
@@ -1059,6 +1086,7 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
 import ProxySelector from '@/components/common/ProxySelector.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
+import HeaderOverrideEditor from '@/components/account/HeaderOverrideEditor.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import Icon from '@/components/icons/Icon.vue'
 import {
@@ -1069,6 +1097,14 @@ import {
   buildModelMappingObject as buildModelMappingPayload,
   getPresetMappingsByPlatform
 } from '@/composables/useModelWhitelist'
+import {
+  buildHeaderOverridesObject,
+  isHeaderOverridePlatform,
+  validateHeaderOverrideRows,
+  HEADER_OVERRIDE_ENABLED_CREDENTIAL_KEY,
+  HEADER_OVERRIDES_CREDENTIAL_KEY,
+  type HeaderOverrideRow
+} from '@/components/account/credentialsBuilder'
 import {
   OPENAI_WS_MODE_CTX_POOL,
   OPENAI_WS_MODE_OFF,
@@ -1194,6 +1230,20 @@ const allOpenAIAPIKey = computed(() => {
   )
 })
 
+const allHeaderOverrideCapable = computed(() => {
+  return (
+    !isUserScope.value &&
+    targetSelectedPlatforms.value.length > 0 &&
+    targetSelectedPlatforms.value.every(platform => isHeaderOverridePlatform(platform)) &&
+    targetSelectedTypes.value.length > 0 &&
+    targetSelectedTypes.value.every(type => type === 'apikey')
+  )
+})
+
+const headerOverrideTemplatePlatform = computed(() =>
+  targetSelectedPlatforms.value.length === 1 ? targetSelectedPlatforms.value[0] : ''
+)
+
 // 是否全部为 Anthropic OAuth/SetupToken（RPM 配置仅在此条件下显示）
 const allAnthropicOAuthOrSetupToken = computed(() => {
   return (
@@ -1230,6 +1280,7 @@ const enableBaseUrl = ref(false)
 const enableModelRestriction = ref(false)
 const enableCustomErrorCodes = ref(false)
 const enableInterceptWarmup = ref(false)
+const enableHeaderOverride = ref(false)
 const enableProxy = ref(false)
 const enableConcurrency = ref(false)
 const enableLoadFactor = ref(false)
@@ -1257,6 +1308,8 @@ const modelMappings = ref<ModelMapping[]>([])
 const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
 const interceptWarmupRequests = ref(false)
+const headerOverrideEnabled = ref(false)
+const headerOverrideRows = ref<HeaderOverrideRow[]>([])
 const proxyId = ref<number | null>(null)
 const concurrency = ref(1)
 const loadFactor = ref<number | null>(null)
@@ -1516,6 +1569,14 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
     credentialsChanged = true
   }
 
+  if (enableHeaderOverride.value) {
+    credentials[HEADER_OVERRIDE_ENABLED_CREDENTIAL_KEY] = headerOverrideEnabled.value
+    credentials[HEADER_OVERRIDES_CREDENTIAL_KEY] = headerOverrideEnabled.value
+      ? buildHeaderOverridesObject(headerOverrideRows.value)
+      : {}
+    credentialsChanged = true
+  }
+
   if (credentialsChanged) {
     updates.credentials = credentials
   }
@@ -1673,6 +1734,7 @@ const handleSubmit = async () => {
     (canManageModelRestriction.value && enableModelRestriction.value) ||
     (canManageCustomErrorCodes.value && enableCustomErrorCodes.value) ||
     enableInterceptWarmup.value ||
+    enableHeaderOverride.value ||
     (canManageProxy.value && enableProxy.value) ||
     enableConcurrency.value ||
     enableLoadFactor.value ||
@@ -1691,6 +1753,18 @@ const handleSubmit = async () => {
   if (!hasAnyFieldEnabled) {
     appStore.showError(t('admin.accounts.bulkEdit.noFieldsSelected'))
     return
+  }
+
+  if (enableHeaderOverride.value && headerOverrideEnabled.value) {
+    if (!headerOverrideRows.value.some((row) => row.name.trim())) {
+      appStore.showError(t('admin.accounts.headerOverride.bulkEmptyRows'))
+      return
+    }
+    const headerError = validateHeaderOverrideRows(headerOverrideRows.value)
+    if (headerError) {
+      appStore.showError(t(`admin.accounts.headerOverride.${headerError}`))
+      return
+    }
   }
 
   const built = buildUpdatePayload()
@@ -1783,6 +1857,7 @@ watch(
       enableModelRestriction.value = false
       enableCustomErrorCodes.value = false
       enableInterceptWarmup.value = false
+      enableHeaderOverride.value = false
       enableProxy.value = false
       enableConcurrency.value = false
       enableLoadFactor.value = false
@@ -1807,6 +1882,8 @@ watch(
       selectedErrorCodes.value = []
       customErrorCodeInput.value = null
       interceptWarmupRequests.value = false
+      headerOverrideEnabled.value = false
+      headerOverrideRows.value = []
       proxyId.value = null
       concurrency.value = isUserScope.value ? PERSONAL_ACCOUNT_DEFAULT_CONCURRENCY : 1
       loadFactor.value = null

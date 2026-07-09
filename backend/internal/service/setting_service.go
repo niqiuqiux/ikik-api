@@ -34,6 +34,10 @@ var (
 		"DEFAULT_SUBSCRIPTION_GROUP_DUPLICATE",
 		"default subscription group cannot be duplicated",
 	)
+	ErrHomeStatsGroupInvalid = infraerrors.BadRequest(
+		"HOME_STATS_GROUP_INVALID",
+		"home stats group must be an administrator public group",
+	)
 )
 
 type SettingRepository interface {
@@ -584,6 +588,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyContactInfo,
 		SettingKeyDocURL,
 		SettingKeyHomeContent,
+		SettingKeyHomeStatsGroupID,
 		SettingKeyHideCcsImportButton,
 		SettingKeyPurchaseSubscriptionEnabled,
 		SettingKeyPurchaseSubscriptionURL,
@@ -1364,6 +1369,12 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	if err := s.validateDefaultSubscriptionGroups(ctx, settings.DefaultSubscriptions); err != nil {
 		return nil, err
 	}
+	if settings.HomeStatsGroupID < 0 {
+		settings.HomeStatsGroupID = 0
+	}
+	if err := s.validateHomeStatsGroup(ctx, settings.HomeStatsGroupID); err != nil {
+		return nil, err
+	}
 	normalizedWhitelist, err := NormalizeRegistrationEmailSuffixWhitelist(settings.RegistrationEmailSuffixWhitelist)
 	if err != nil {
 		return nil, infraerrors.BadRequest("INVALID_REGISTRATION_EMAIL_SUFFIX_WHITELIST", err.Error())
@@ -1545,6 +1556,10 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyContactInfo] = settings.ContactInfo
 	updates[SettingKeyDocURL] = settings.DocURL
 	updates[SettingKeyHomeContent] = settings.HomeContent
+	if settings.HomeStatsGroupID < 0 {
+		settings.HomeStatsGroupID = 0
+	}
+	updates[SettingKeyHomeStatsGroupID] = strconv.FormatInt(settings.HomeStatsGroupID, 10)
 	updates[SettingKeyHideCcsImportButton] = strconv.FormatBool(settings.HideCcsImportButton)
 	updates[SettingKeyPurchaseSubscriptionEnabled] = strconv.FormatBool(settings.PurchaseSubscriptionEnabled)
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
@@ -1821,6 +1836,31 @@ func (s *SettingService) validateDefaultSubscriptionGroups(ctx context.Context, 
 	}
 
 	return nil
+}
+
+func (s *SettingService) validateHomeStatsGroup(ctx context.Context, groupID int64) error {
+	if groupID <= 0 || s.defaultSubGroupReader == nil {
+		return nil
+	}
+	group, err := s.defaultSubGroupReader.GetByID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, ErrGroupNotFound) {
+			return ErrHomeStatsGroupInvalid.WithMetadata(map[string]string{
+				"group_id": strconv.FormatInt(groupID, 10),
+			})
+		}
+		return fmt.Errorf("get home stats group %d: %w", groupID, err)
+	}
+	if !isAdministratorPublicGroup(group) {
+		return ErrHomeStatsGroupInvalid.WithMetadata(map[string]string{
+			"group_id": strconv.FormatInt(groupID, 10),
+		})
+	}
+	return nil
+}
+
+func isAdministratorPublicGroup(group *Group) bool {
+	return group != nil && group.OwnerUserID == nil && NormalizeGroupScope(group.Scope) == GroupScopePublic
 }
 
 // IsRegistrationEnabled 检查是否开放注册
@@ -2504,6 +2544,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAvailableChannelsEnabled: "false",
 		SettingKeyFreeModelsEnabled:        "false",
 		SettingKeyAutoModelSettings:        DefaultAutoModelSettingsJSON(),
+		SettingKeyHomeStatsGroupID:         "0",
 
 		// Carpool pools feature (default disabled; opt-in)
 		SettingKeyCarpoolEnabled:           "false",
@@ -2585,6 +2626,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		ContactInfo:                      settings[SettingKeyContactInfo],
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
+		HomeStatsGroupID:                 parseNonNegativeSettingInt64(settings[SettingKeyHomeStatsGroupID]),
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
@@ -3002,6 +3044,14 @@ func parseNonNegativeSettingFloat(value string, fallback float64) float64 {
 	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
 	if err != nil || parsed < 0 || math.IsNaN(parsed) || math.IsInf(parsed, 0) {
 		return fallback
+	}
+	return parsed
+}
+
+func parseNonNegativeSettingInt64(value string) int64 {
+	parsed, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+	if err != nil || parsed < 0 {
+		return 0
 	}
 	return parsed
 }

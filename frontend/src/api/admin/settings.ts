@@ -398,6 +398,7 @@ export interface SystemSettings {
   contact_info: string;
   doc_url: string;
   home_content: string;
+  home_stats_group_id: number;
   hide_ccs_import_button: boolean;
   purchase_subscription_enabled: boolean;
   purchase_subscription_url: string;
@@ -652,6 +653,7 @@ export interface UpdateSettingsRequest {
   contact_info?: string;
   doc_url?: string;
   home_content?: string;
+  home_stats_group_id?: number;
   hide_ccs_import_button?: boolean;
   purchase_subscription_enabled?: boolean;
   purchase_subscription_url?: string;

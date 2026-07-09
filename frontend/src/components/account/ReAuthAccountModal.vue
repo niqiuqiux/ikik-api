@@ -244,7 +244,7 @@ const claudeOAuth = useAccountOAuth(accountScope.value)
 const openaiOAuth = useOpenAIOAuth(accountScope.value)
 const geminiOAuth = useGeminiOAuth(accountScope.value)
 const antigravityOAuth = useAntigravityOAuth(accountScope.value)
-const grokOAuth = useGrokOAuth()
+const grokOAuth = useGrokOAuth(accountScope.value)
 const kiroOAuth = useKiroOAuth()
 
 // Refs

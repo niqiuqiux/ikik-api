@@ -145,6 +145,19 @@
             </div>
           </template>
 
+          <template #cell-current_concurrency="{ value }">
+            <span
+              :class="[
+                'inline-flex min-w-8 items-center justify-center rounded px-2 py-1 text-sm font-semibold tabular-nums',
+                (value ?? 0) > 0
+                  ? 'bg-[var(--app-primary-soft)] text-[var(--app-primary)] ring-1 ring-[var(--app-primary-border)]'
+                  : 'bg-[var(--app-surface-muted)] text-[var(--app-muted)]'
+              ]"
+            >
+              {{ value ?? 0 }}
+            </span>
+          </template>
+
           <template #cell-usage="{ row }">
             <div class="text-sm">
               <div class="flex items-center gap-1.5">
@@ -1289,6 +1302,7 @@ const columns = computed<Column[]>(() => [
   { key: 'name', label: t('common.name'), sortable: true },
   { key: 'key', label: t('keys.apiKey'), sortable: false },
   { key: 'group', label: t('keys.group'), sortable: false },
+  { key: 'current_concurrency', label: t('keys.currentConcurrency'), sortable: false },
   { key: 'usage', label: t('keys.usage'), sortable: false },
   { key: 'rate_limit', label: t('keys.rateLimitColumn'), sortable: false },
   { key: 'expires_at', label: t('keys.expiresAt'), sortable: true },

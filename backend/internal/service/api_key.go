@@ -45,6 +45,7 @@ type APIKey struct {
 	User                *User
 	Group               *Group
 	GroupRoutes         []APIKeyGroupRoute
+	CurrentConcurrency  int
 
 	// Quota fields
 	Quota     float64    // Quota limit in USD (0 = unlimited)

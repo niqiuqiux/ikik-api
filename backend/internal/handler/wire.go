@@ -110,6 +110,7 @@ func ProvideUserAccountHandler(
 	openaiOAuthService *service.OpenAIOAuthService,
 	geminiOAuthService *service.GeminiOAuthService,
 	antigravityOAuthService *service.AntigravityOAuthService,
+	grokOAuthService *service.GrokOAuthService,
 	kiroOAuthService *service.KiroOAuthService,
 	accountBatchTaskService *service.AccountBatchTaskService,
 	carpoolService *service.CarpoolService,
@@ -127,6 +128,7 @@ func ProvideUserAccountHandler(
 	)
 	h.SetCarpoolService(carpoolService)
 	h.SetSettingService(settingService)
+	h.SetGrokOAuthService(grokOAuthService)
 	h.SetKiroOAuthService(kiroOAuthService)
 	return h
 }

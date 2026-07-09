@@ -25,14 +25,22 @@
           t('admin.accounts.dataImportFile')
         }}</label>
         <div
-          class="flex items-center justify-between gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 dark:border-dark-600 dark:bg-dark-800"
+          class="flex items-center justify-between gap-3 rounded-lg border border-dashed px-4 py-3 transition-colors"
+          :class="dragActive
+            ? 'border-primary-400 bg-primary-50/70 dark:border-primary-500 dark:bg-primary-900/20'
+            : 'border-gray-300 bg-gray-50 dark:border-dark-600 dark:bg-dark-800'"
+          @dragenter.prevent="handleDragEnter"
+          @dragover.prevent
+          @dragleave.prevent="handleDragLeave"
+          @drop.prevent="handleDrop"
         >
           <div class="min-w-0">
-            <div class="truncate text-sm text-gray-700 dark:text-dark-200">
+            <div class="truncate text-sm text-gray-700 dark:text-dark-200" :title="fileListTitle">
               {{ fileLabel || t('admin.accounts.dataImportSelectFile') }}
             </div>
             <div class="text-xs text-gray-500 dark:text-dark-400">
               JSON/TXT/ZIP (.json, .txt, .zip)
+              <span v-if="files.length > 1"> · {{ fileListTitle }}</span>
             </div>
           </div>
           <button
@@ -330,6 +338,7 @@ const appStore = useAppStore()
 
 const importing = ref(false)
 const extracting = ref(false)
+const dragActive = ref(false)
 const files = ref<File[]>([])
 const sourceURLs = ref('')
 const importTargetGroups = ref<AdminGroup[]>([])
@@ -363,6 +372,7 @@ const fileLabel = computed(() => {
     count: files.value.length
   })
 })
+const fileListTitle = computed(() => files.value.map((file) => file.name).join(', '))
 
 const errorItems = computed(() => result.value?.errors || [])
 const selectedImportTargetGroups = computed(() =>
@@ -402,14 +412,12 @@ const openFilePicker = () => {
   fileInput.value?.click()
 }
 
-const handleFileChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement
+const setSelectedFiles = async (selectedFiles: File[]) => {
   extracting.value = true
   try {
-    files.value = await expandSelectedImportFiles(
-      Array.from(target.files || [])
-    )
-    if (target.files && target.files.length > 0 && files.value.length === 0) {
+    const expandedFiles = await expandSelectedImportFiles(selectedFiles)
+    files.value = expandedFiles
+    if (selectedFiles.length > 0 && expandedFiles.length === 0) {
       appStore.showError(t('admin.accounts.dataImportZipNoImportableFiles'))
     }
   } catch (error: any) {
@@ -419,6 +427,31 @@ const handleFileChange = async (event: Event) => {
     )
   } finally {
     extracting.value = false
+  }
+}
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  await setSelectedFiles(Array.from(target.files || []))
+}
+
+const handleDragEnter = () => {
+  dragActive.value = true
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  const current = event.currentTarget as HTMLElement | null
+  const related = event.relatedTarget as Node | null
+  if (!current || !related || !current.contains(related)) {
+    dragActive.value = false
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  dragActive.value = false
+  await setSelectedFiles(Array.from(event.dataTransfer?.files || []))
+  if (fileInput.value) {
+    fileInput.value.value = ''
   }
 }
 
@@ -606,6 +639,7 @@ const expandSelectedImportFiles = async (
   selectedFiles: File[]
 ): Promise<File[]> => {
   const expanded: File[] = []
+  let ignoredCount = 0
   for (const selectedFile of selectedFiles) {
     if (isZipFile(selectedFile)) {
       expanded.push(...(await extractImportableFilesFromZip(selectedFile)))
@@ -613,7 +647,12 @@ const expandSelectedImportFiles = async (
     }
     if (isImportableDataFileName(selectedFile.name)) {
       expanded.push(selectedFile)
+      continue
     }
+    ignoredCount++
+  }
+  if (ignoredCount > 0) {
+    appStore.showWarning(t('admin.accounts.dataImportIgnoredFiles', { count: ignoredCount }))
   }
   return expanded
 }

@@ -208,6 +208,7 @@ func (s *AccountTestService) buildAnthropicUpstreamModelsRequest(ctx context.Con
 	} else {
 		setAnthropicAPIKeyAuthHeader(req.Header, account, apiKeyAuthToken)
 	}
+	account.ApplyHeaderOverrides(req.Header)
 	return req, nil
 }
 
@@ -280,6 +281,7 @@ func (s *AccountTestService) buildOpenAIUpstreamModelsRequest(ctx context.Contex
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
+	account.ApplyHeaderOverrides(req.Header)
 	return req, nil
 }
 

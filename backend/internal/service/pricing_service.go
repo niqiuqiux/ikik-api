@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
 	"ikik-api/internal/config"
 	"ikik-api/internal/pkg/logger"
 	"ikik-api/internal/pkg/openai"
 	"ikik-api/internal/util/urlvalidator"
-	"go.uber.org/zap"
 )
 
 var (
@@ -795,6 +795,13 @@ func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
 				Info(fmt.Sprintf("[Pricing] OpenAI fallback matched %s -> %s", model, "gpt-5.2-codex"))
 			return pricing
 		}
+	}
+
+	// GPT-5.6（sol / terra / luna）回退到 GPT-5.4 定价
+	if strings.HasPrefix(model, "gpt-5.6") {
+		logger.With(zap.String("component", "service.pricing")).
+			Info(fmt.Sprintf("[Pricing] OpenAI fallback matched %s -> %s", model, "gpt-5.4(static)"))
+		return openAIGPT54FallbackPricing
 	}
 
 	// GPT-5.5 回退到 GPT-5.4 定价

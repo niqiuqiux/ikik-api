@@ -231,6 +231,63 @@ func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsDuplicateGrou
 	require.Nil(t, repo.updates)
 }
 
+func TestSettingService_UpdateSettings_HomeStatsGroup_AllowsAdministratorPublicGroup(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	groupReader := &defaultSubGroupReaderStub{
+		byID: map[int64]*Group{
+			21: {ID: 21, Scope: GroupScopePublic},
+		},
+	}
+	svc := NewSettingService(repo, &config.Config{})
+	svc.SetDefaultSubscriptionGroupReader(groupReader)
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		HomeStatsGroupID: 21,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "21", repo.updates[SettingKeyHomeStatsGroupID])
+}
+
+func TestSettingService_UpdateSettings_HomeStatsGroup_RejectsUserPrivateGroup(t *testing.T) {
+	ownerID := int64(7)
+	repo := &settingUpdateRepoStub{}
+	groupReader := &defaultSubGroupReaderStub{
+		byID: map[int64]*Group{
+			22: {ID: 22, Scope: GroupScopeUserPrivate, OwnerUserID: &ownerID},
+		},
+	}
+	svc := NewSettingService(repo, &config.Config{})
+	svc.SetDefaultSubscriptionGroupReader(groupReader)
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		HomeStatsGroupID: 22,
+	})
+	require.Error(t, err)
+	require.Equal(t, "HOME_STATS_GROUP_INVALID", infraerrors.Reason(err))
+	require.Equal(t, "22", infraerrors.FromError(err).Metadata["group_id"])
+	require.Nil(t, repo.updates)
+}
+
+func TestSettingService_UpdateSettings_HomeStatsGroup_RejectsCarpoolGroup(t *testing.T) {
+	ownerID := int64(8)
+	repo := &settingUpdateRepoStub{}
+	groupReader := &defaultSubGroupReaderStub{
+		byID: map[int64]*Group{
+			23: {ID: 23, Scope: GroupScopeUserCarpool, OwnerUserID: &ownerID},
+		},
+	}
+	svc := NewSettingService(repo, &config.Config{})
+	svc.SetDefaultSubscriptionGroupReader(groupReader)
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		HomeStatsGroupID: 23,
+	})
+	require.Error(t, err)
+	require.Equal(t, "HOME_STATS_GROUP_INVALID", infraerrors.Reason(err))
+	require.Equal(t, "23", infraerrors.FromError(err).Metadata["group_id"])
+	require.Nil(t, repo.updates)
+}
+
 func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Normalized(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
 	svc := NewSettingService(repo, &config.Config{})

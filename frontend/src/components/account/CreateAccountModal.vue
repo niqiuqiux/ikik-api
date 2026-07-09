@@ -867,7 +867,6 @@
         <label class="input-label">{{ t('admin.accounts.accountType') }}</label>
         <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" data-tour="account-form-type">
           <button
-            v-if="!isUserScope"
             type="button"
             @click="accountCategory = 'oauth-based'"
             :class="[
@@ -1757,6 +1756,13 @@
             </div>
           </div>
         </div>
+
+        <HeaderOverrideEditor
+          v-if="showHeaderOverrideEditor"
+          v-model:enabled="headerOverrideEnabled"
+          v-model:rows="headerOverrideRows"
+          :platform="form.platform"
+        />
 
       </div>
 
@@ -3559,7 +3565,14 @@ import GroupSelector from '@/components/common/GroupSelector.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
-import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
+import HeaderOverrideEditor from '@/components/account/HeaderOverrideEditor.vue'
+import {
+  applyHeaderOverride,
+  applyInterceptWarmup,
+  isHeaderOverridePlatform,
+  validateHeaderOverrideRows,
+  type HeaderOverrideRow
+} from '@/components/account/credentialsBuilder'
 import {
   PERSONAL_ACCOUNT_DEFAULT_AUTO_PAUSE_ON_EXPIRED,
   PERSONAL_ACCOUNT_DEFAULT_CONCURRENCY,
@@ -3668,6 +3681,18 @@ const assignableGroups = computed(() => accountAssignableGroups(props.groups))
 const userProxyForcesPrivate = computed(() => isUserScope.value && !!form.proxy_id)
 const userApiKeyForcesPrivate = computed(() => isUserScope.value && form.type === 'apikey')
 const userShareForcesPrivate = computed(() => userProxyForcesPrivate.value || userApiKeyForcesPrivate.value)
+const showHeaderOverrideEditor = computed(() =>
+  !isUserScope.value &&
+  form.type === 'apikey' &&
+  isHeaderOverridePlatform(form.platform)
+)
+
+watch(() => [form.platform, form.type, isUserScope.value], () => {
+  if (!showHeaderOverrideEditor.value) {
+    headerOverrideEnabled.value = false
+    headerOverrideRows.value = []
+  }
+})
 const customProtocolOptions = computed<Array<{ value: CustomAccountProtocol; label: string }>>(() => [
   { value: 'openai_chat_completions', label: t('admin.accounts.custom.protocolOptions.openaiChatCompletions') },
   { value: 'openai_responses', label: t('admin.accounts.custom.protocolOptions.openaiResponses') },
@@ -3689,7 +3714,7 @@ const oauth = useAccountOAuth(accountScope.value) // For Anthropic OAuth
 const openaiOAuth = useOpenAIOAuth(accountScope.value) // For OpenAI OAuth
 const geminiOAuth = useGeminiOAuth(accountScope.value) // For Gemini OAuth
 const antigravityOAuth = useAntigravityOAuth(accountScope.value) // For Antigravity OAuth
-const grokOAuth = useGrokOAuth() // For Grok OAuth
+const grokOAuth = useGrokOAuth(accountScope.value) // For Grok OAuth
 const kiroOAuth = useKiroOAuth(accountScope.value) // For Kiro OAuth
 
 // Computed: current OAuth state for template binding
@@ -3796,6 +3821,8 @@ function parsePoolModeRetryStatusCodes(input: string): number[] {
 const customErrorCodesEnabled = ref(false)
 const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
+const headerOverrideEnabled = ref(false)
+const headerOverrideRows = ref<HeaderOverrideRow[]>([])
 const interceptWarmupRequests = ref(false)
 const autoPauseOnExpired = ref(true)
 const openaiPassthroughEnabled = ref(false)
@@ -4215,7 +4242,7 @@ watch(
       if (antigravityAccountType.value !== 'oauth') {
         antigravityAccountType.value = 'oauth'
       }
-      if (form.platform === 'custom' || form.platform === 'grok') {
+      if (form.platform === 'custom') {
         accountCategory.value = 'apikey'
         form.type = 'apikey'
         return
@@ -4736,8 +4763,29 @@ const sanitizeCreatePayload = (payload: CreateAccountRequest): CreateAccountRequ
   return next
 }
 
+const validateHeaderOverrideConfig = (): boolean => {
+  if (!showHeaderOverrideEditor.value || !headerOverrideEnabled.value) {
+    return true
+  }
+  const headerError = validateHeaderOverrideRows(headerOverrideRows.value)
+  if (headerError) {
+    appStore.showError(t(`admin.accounts.headerOverride.${headerError}`))
+    return false
+  }
+  return true
+}
+
+const withHeaderOverridePayload = (payload: CreateAccountRequest): CreateAccountRequest => {
+  if (!isHeaderOverridePlatform(payload.platform) || payload.type !== 'apikey' || isUserScope.value) {
+    return payload
+  }
+  const credentials = { ...((payload.credentials as Record<string, unknown>) || {}) }
+  applyHeaderOverride(credentials, headerOverrideEnabled.value, headerOverrideRows.value, 'create')
+  return { ...payload, credentials }
+}
+
 const createAccount = (payload: CreateAccountRequest): Promise<unknown> => {
-  const next = sanitizeCreatePayload(payload)
+  const next = sanitizeCreatePayload(withHeaderOverridePayload(payload))
   return isUserScope.value ? accountsAPI.create(next) : adminAPI.accounts.create(next)
 }
 
@@ -4818,6 +4866,8 @@ const resetForm = () => {
   customErrorCodesEnabled.value = false
   selectedErrorCodes.value = []
   customErrorCodeInput.value = null
+  headerOverrideEnabled.value = false
+  headerOverrideRows.value = []
   interceptWarmupRequests.value = false
   autoPauseOnExpired.value = PERSONAL_ACCOUNT_DEFAULT_AUTO_PAUSE_ON_EXPIRED
   openaiPassthroughEnabled.value = false
@@ -5070,6 +5120,10 @@ const handleSubmit = async () => {
       return
     }
     step.value = 2
+    return
+  }
+
+  if (!validateHeaderOverrideConfig()) {
     return
   }
 

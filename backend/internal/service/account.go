@@ -81,6 +81,14 @@ type Account struct {
 	modelMappingCacheRawPtr         uintptr
 	modelMappingCacheRawLen         int
 	modelMappingCacheRawSig         uint64
+
+	// header_overrides 热路径缓存（非持久化字段，同 model_mapping 缓存先例）
+	headerOverrideCache               map[string]string
+	headerOverrideCacheReady          bool
+	headerOverrideCacheCredentialsPtr uintptr
+	headerOverrideCacheRawPtr         uintptr
+	headerOverrideCacheRawLen         int
+	headerOverrideCacheRawSig         uint64
 }
 
 type OpenAIEndpointCapability string
@@ -1952,6 +1960,17 @@ func (a *Account) IsCodexCLIOnlyEnabled() bool {
 	}
 	enabled, ok := a.Extra["codex_cli_only"].(bool)
 	return ok && enabled
+}
+
+// IsCodexCLIOnlyAppServerAllowed 返回 codex_cli_only 账号是否额外放行 Codex app-server
+// 第三方客户端（运行时与全局 app_server 开关 OR）。字段：accounts.extra.codex_cli_only_allow_app_server。
+// 仅在 codex_cli_only 已启用时有意义；字段缺失或类型不符按 false（不放行）处理。
+func (a *Account) IsCodexCLIOnlyAppServerAllowed() bool {
+	if !a.IsCodexCLIOnlyEnabled() {
+		return false
+	}
+	v, ok := a.Extra["codex_cli_only_allow_app_server"].(bool)
+	return ok && v
 }
 
 // WindowCostSchedulability 窗口费用调度状态

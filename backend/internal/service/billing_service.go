@@ -220,6 +220,9 @@ func (s *BillingService) initFallbackPricing() {
 	}
 	// GPT-5.5 暂无独立定价，回退到 GPT-5.4
 	s.fallbackPrices["gpt-5.5"] = s.fallbackPrices["gpt-5.4"]
+	s.fallbackPrices["gpt-5.6-sol"] = s.fallbackPrices["gpt-5.4"]
+	s.fallbackPrices["gpt-5.6-terra"] = s.fallbackPrices["gpt-5.4"]
+	s.fallbackPrices["gpt-5.6-luna"] = s.fallbackPrices["gpt-5.4"]
 
 	s.fallbackPrices["gpt-5.4-mini"] = &ModelPricing{
 		InputPricePerToken:     7.5e-7,
@@ -322,6 +325,12 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 		}
 		normalized := normalizeCodexModel(modelLower)
 		switch normalized {
+		case "gpt-5.6-sol":
+			return s.fallbackPrices["gpt-5.6-sol"]
+		case "gpt-5.6-terra":
+			return s.fallbackPrices["gpt-5.6-terra"]
+		case "gpt-5.6-luna":
+			return s.fallbackPrices["gpt-5.6-luna"]
 		case "gpt-5.5":
 			return s.fallbackPrices["gpt-5.5"]
 		case "gpt-5.4-mini":
@@ -687,7 +696,8 @@ func isOpenAIGPT54Model(model string) bool {
 		return false
 	}
 	normalized := normalizeCodexModel(trimmed)
-	return normalized == "gpt-5.4" || normalized == "gpt-5.5"
+	return normalized == "gpt-5.4" || normalized == "gpt-5.5" ||
+		normalized == "gpt-5.6-sol" || normalized == "gpt-5.6-terra" || normalized == "gpt-5.6-luna"
 }
 
 // CalculateCostWithConfig 使用配置中的默认倍率计算费用

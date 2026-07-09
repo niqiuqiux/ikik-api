@@ -260,6 +260,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		ContactInfo:                               settings.ContactInfo,
 		DocURL:                                    settings.DocURL,
 		HomeContent:                               settings.HomeContent,
+		HomeStatsGroupID:                          settings.HomeStatsGroupID,
 		HideCcsImportButton:                       settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:               settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                   settings.PurchaseSubscriptionURL,
@@ -531,6 +532,7 @@ type UpdateSettingsRequest struct {
 	ContactInfo                 string                `json:"contact_info"`
 	DocURL                      string                `json:"doc_url"`
 	HomeContent                 string                `json:"home_content"`
+	HomeStatsGroupID            int64                 `json:"home_stats_group_id"`
 	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
@@ -1529,6 +1531,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                 req.ContactInfo,
 		DocURL:                      req.DocURL,
 		HomeContent:                 req.HomeContent,
+		HomeStatsGroupID:            req.HomeStatsGroupID,
 		HideCcsImportButton:         req.HideCcsImportButton,
 		PurchaseSubscriptionEnabled: purchaseEnabled,
 		PurchaseSubscriptionURL:     purchaseURL,
@@ -1973,6 +1976,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                               updatedSettings.ContactInfo,
 		DocURL:                                    updatedSettings.DocURL,
 		HomeContent:                               updatedSettings.HomeContent,
+		HomeStatsGroupID:                          updatedSettings.HomeStatsGroupID,
 		HideCcsImportButton:                       updatedSettings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:               updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                   updatedSettings.PurchaseSubscriptionURL,
@@ -2355,6 +2359,9 @@ func preserveOmittedUpdateSettingsFields(req *UpdateSettingsRequest, previous *s
 	if !fieldProvided(fields, "home_content") {
 		req.HomeContent = previous.HomeContent
 	}
+	if !fieldProvided(fields, "home_stats_group_id") {
+		req.HomeStatsGroupID = previous.HomeStatsGroupID
+	}
 	if !fieldProvided(fields, "hide_ccs_import_button") {
 		req.HideCcsImportButton = previous.HideCcsImportButton
 	}
@@ -2672,6 +2679,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.HomeContent != after.HomeContent {
 		changed = append(changed, "home_content")
+	}
+	if before.HomeStatsGroupID != after.HomeStatsGroupID {
+		changed = append(changed, "home_stats_group_id")
 	}
 	if before.HideCcsImportButton != after.HideCcsImportButton {
 		changed = append(changed, "hide_ccs_import_button")

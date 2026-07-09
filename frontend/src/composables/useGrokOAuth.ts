@@ -2,9 +2,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
+import { accountsAPI } from '@/api/accounts'
 import type { GrokTokenInfo } from '@/api/admin/grok'
+import type { AccountApiScope } from '@/composables/useAccountOAuth'
 
-export function useGrokOAuth() {
+export function useGrokOAuth(scope: AccountApiScope = 'admin') {
   const appStore = useAppStore()
   const { t } = useI18n()
 
@@ -33,10 +35,13 @@ export function useGrokOAuth() {
       const payload: Record<string, unknown> = {}
       if (proxyId) payload.proxy_id = proxyId
 
-      const response = await adminAPI.grok.generateAuthUrl(payload)
+      const response =
+        scope === 'user'
+          ? await accountsAPI.generateGrokOAuthUrl(payload)
+          : await adminAPI.grok.generateAuthUrl(payload)
       authUrl.value = response.auth_url
       sessionId.value = response.session_id
-      state.value = response.state
+      state.value = response.state || ''
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || t('admin.accounts.oauth.grok.failedToGenerateUrl')
@@ -70,7 +75,11 @@ export function useGrokOAuth() {
       }
       if (params.proxyId) payload.proxy_id = params.proxyId
 
-      return await adminAPI.grok.exchangeCode(payload as any)
+      const tokenInfo =
+        scope === 'user'
+          ? await accountsAPI.exchangeGrokOAuthCode(payload as any)
+          : await adminAPI.grok.exchangeCode(payload as any)
+      return tokenInfo as GrokTokenInfo
     } catch (err: any) {
       error.value = err.response?.data?.detail || t('admin.accounts.oauth.grok.failedToExchangeCode')
       appStore.showError(error.value)
@@ -93,7 +102,11 @@ export function useGrokOAuth() {
     error.value = ''
 
     try {
-      return await adminAPI.grok.refreshGrokToken(refreshToken.trim(), proxyId)
+      const tokenInfo =
+        scope === 'user'
+          ? await accountsAPI.refreshGrokToken(refreshToken.trim(), proxyId)
+          : await adminAPI.grok.refreshGrokToken(refreshToken.trim(), proxyId)
+      return tokenInfo as GrokTokenInfo
     } catch (err: any) {
       error.value = err.response?.data?.detail || t('admin.accounts.oauth.grok.failedToValidateRT')
       return null

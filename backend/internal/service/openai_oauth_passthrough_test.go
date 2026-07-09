@@ -809,7 +809,7 @@ func TestOpenAIGatewayService_CodexCLIOnly_AllowOfficialClientFamilies(t *testin
 		{name: "codex_cli_rs", ua: "codex_cli_rs/0.99.0", originator: ""},
 		{name: "codex_vscode", ua: "codex_vscode/1.0.0", originator: ""},
 		{name: "codex_app", ua: "codex_app/2.1.0", originator: ""},
-		{name: "originator_codex_chatgpt_desktop", ua: "curl/8.0", originator: "codex_chatgpt_desktop"},
+		{name: "originator_codex_chatgpt_desktop", ua: "myterm/0.141.0", originator: "codex_chatgpt_desktop"},
 	}
 
 	for _, tt := range tests {
@@ -821,6 +821,7 @@ func TestOpenAIGatewayService_CodexCLIOnly_AllowOfficialClientFamilies(t *testin
 			if tt.originator != "" {
 				c.Request.Header.Set("originator", tt.originator)
 			}
+			c.Request.Header.Set("x-codex-window-id", "1")
 
 			inputBody := []byte(`{"model":"gpt-5.2","stream":false,"store":true,"input":[{"type":"text","text":"hi"}]}`)
 

@@ -937,14 +937,7 @@
           </div>
         </div>
 
-        <div
-          v-if="
-            createForm.platform === 'antigravity' ||
-            createForm.platform === 'gemini' ||
-            createForm.platform === 'openai'
-          "
-          class="border-t pt-4"
-        >
+        <div v-if="supportsImagePricingPlatform(createForm.platform)" class="border-t pt-4">
           <label
             class="block mb-2 font-medium text-gray-700 dark:text-gray-300"
           >
@@ -2295,14 +2288,7 @@
           </div>
         </div>
 
-        <div
-          v-if="
-            editForm.platform === 'antigravity' ||
-            editForm.platform === 'gemini' ||
-            editForm.platform === 'openai'
-          "
-          class="border-t pt-4"
-        >
+        <div v-if="supportsImagePricingPlatform(editForm.platform)" class="border-t pt-4">
           <label
             class="block mb-2 font-medium text-gray-700 dark:text-gray-300"
           >
@@ -3293,6 +3279,7 @@ import {
   setModelsListCandidates,
 } from "./groupsModelsList";
 import { createModelsListCandidatesTracker } from "./groupsModelsListCandidates";
+import { supportsImagePricingPlatform } from "./groupsImagePricing";
 
 const { t } = useI18n();
 const appStore = useAppStore();

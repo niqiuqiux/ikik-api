@@ -465,6 +465,13 @@
           </div>
         </div>
 
+        <HeaderOverrideEditor
+          v-if="showHeaderOverrideEditor"
+          v-model:enabled="headerOverrideEnabled"
+          v-model:rows="headerOverrideRows"
+          :platform="account.platform"
+        />
+
       </div>
 
       <!-- OAuth model mapping. OAuth accounts do not render the API key credential card. -->
@@ -2259,9 +2266,17 @@ import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ProxySelector from '@/components/common/ProxySelector.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
+import HeaderOverrideEditor from '@/components/account/HeaderOverrideEditor.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
-import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
+import {
+  applyHeaderOverride,
+  applyInterceptWarmup,
+  isHeaderOverridePlatform,
+  splitHeaderOverridesObject,
+  validateHeaderOverrideRows,
+  type HeaderOverrideRow
+} from '@/components/account/credentialsBuilder'
 import {
   PERSONAL_ACCOUNT_DEFAULT_AUTO_PAUSE_ON_EXPIRED,
   PERSONAL_ACCOUNT_DEFAULT_CONCURRENCY,
@@ -2318,6 +2333,11 @@ const assignableGroups = computed(() => accountAssignableGroups(props.groups))
 const userProxyForcesPrivate = computed(() => isUserScope.value && !!form.proxy_id)
 const userApiKeyForcesPrivate = computed(() => isUserScope.value && props.account?.type === 'apikey')
 const userShareForcesPrivate = computed(() => userProxyForcesPrivate.value || userApiKeyForcesPrivate.value)
+const showHeaderOverrideEditor = computed(() =>
+  !isUserScope.value &&
+  props.account?.type === 'apikey' &&
+  isHeaderOverridePlatform(props.account?.platform || '')
+)
 const canEditConcurrency = computed(() => !isUserScope.value || form.share_mode !== 'public')
 const normalizeCustomProtocol = (value: unknown): CustomAccountProtocol => {
   const normalized = String(value || '').trim().toLowerCase()
@@ -2430,6 +2450,8 @@ function formatPoolModeRetryStatusCodes(value: unknown): string {
 const customErrorCodesEnabled = ref(false)
 const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
+const headerOverrideEnabled = ref(false)
+const headerOverrideRows = ref<HeaderOverrideRow[]>([])
 const interceptWarmupRequests = ref(false)
 const autoPauseOnExpired = ref(false)
 const mixedScheduling = ref(false) // For antigravity accounts: enable mixed scheduling
@@ -2864,6 +2886,8 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   // Load intercept warmup requests setting (applies to all account types)
   const credentials = newAccount.credentials as Record<string, unknown> | undefined
   interceptWarmupRequests.value = credentials?.intercept_warmup_requests === true
+  headerOverrideEnabled.value = false
+  headerOverrideRows.value = []
   autoPauseOnExpired.value = isUserScope.value
     ? PERSONAL_ACCOUNT_DEFAULT_AUTO_PAUSE_ON_EXPIRED
     : newAccount.auto_pause_on_expired === true
@@ -3076,6 +3100,10 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     } else {
       selectedErrorCodes.value = []
     }
+    if (isHeaderOverridePlatform(newAccount.platform)) {
+      headerOverrideEnabled.value = credentials.header_override_enabled === true
+      headerOverrideRows.value = splitHeaderOverridesObject(credentials.header_overrides)
+    }
   } else if (newAccount.type === 'bedrock' && newAccount.credentials) {
     const bedrockCreds = newAccount.credentials as Record<string, unknown>
     const authMode = (bedrockCreds.auth_mode as string) || 'sigv4'
@@ -3196,6 +3224,8 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     poolModeRetryStatusCodesInput.value = ''
     customErrorCodesEnabled.value = false
     selectedErrorCodes.value = []
+    headerOverrideEnabled.value = false
+    headerOverrideRows.value = []
   }
   if (isUserScope.value) {
     if (newAccount.platform === 'kiro') {
@@ -3858,6 +3888,17 @@ const handleSubmit = async () => {
       } else {
         delete newCredentials.custom_error_codes_enabled
         delete newCredentials.custom_error_codes
+      }
+
+      if (showHeaderOverrideEditor.value) {
+        if (headerOverrideEnabled.value) {
+          const headerError = validateHeaderOverrideRows(headerOverrideRows.value)
+          if (headerError) {
+            appStore.showError(t(`admin.accounts.headerOverride.${headerError}`))
+            return
+          }
+        }
+        applyHeaderOverride(newCredentials, headerOverrideEnabled.value, headerOverrideRows.value, 'edit')
       }
 
       // Add intercept warmup requests setting

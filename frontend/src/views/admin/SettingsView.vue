@@ -4796,6 +4796,34 @@
                 </p>
               </div>
 
+              <!-- Home Stats Group -->
+              <div>
+                <label
+                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {{ t("admin.settings.site.homeStatsGroup") }}
+                </label>
+                <select
+                  v-model.number="form.home_stats_group_id"
+                  class="input"
+                >
+                  <option :value="0">
+                    {{ t("admin.settings.site.homeStatsGroupAll") }}
+                  </option>
+                  <option
+                    v-for="group in homeStatsGroups"
+                    :key="group.id"
+                    :value="group.id"
+                  >
+                    {{ group.name }} · {{ group.platform
+                    }}{{ group.status !== "active" ? ` (${t("common.inactive")})` : "" }}
+                  </option>
+                </select>
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.site.homeStatsGroupHint") }}
+                </p>
+              </div>
+
               <!-- Hide CCS Import Button -->
               <div
                 class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
@@ -7253,6 +7281,7 @@ const newAdminApiKey = ref("");
 const subscriptionGroups = ref<AdminGroup[]>([]);
 const autoModelGroups = ref<AdminGroup[]>([]);
 const affiliateGrantGroups = ref<AdminGroup[]>([]);
+const homeStatsGroups = ref<AdminGroup[]>([]);
 
 // Overload Cooldown (529) 状态
 const overloadCooldownLoading = ref(true);
@@ -7427,6 +7456,7 @@ const form = reactive<SettingsForm>({
   contact_info: "",
   doc_url: "",
   home_content: "",
+  home_stats_group_id: 0,
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
   purchase_subscription_enabled: false,
@@ -8615,7 +8645,11 @@ async function loadSettings() {
 async function loadSubscriptionGroups() {
   try {
     const groups = await adminAPI.groups.getAll(undefined, "public");
+    const allGroups = await adminAPI.groups
+      .getAllIncludingInactive("public")
+      .catch(() => groups);
     autoModelGroups.value = groups.filter((group) => group.status === "active");
+    homeStatsGroups.value = allGroups.filter(isAdministratorPublicGroup);
     subscriptionGroups.value = groups.filter(
       (group) =>
         group.subscription_type === "subscription" && group.status === "active",
@@ -8628,7 +8662,12 @@ async function loadSubscriptionGroups() {
     autoModelGroups.value = [];
     subscriptionGroups.value = [];
     affiliateGrantGroups.value = [];
+    homeStatsGroups.value = [];
   }
+}
+
+function isAdministratorPublicGroup(group: AdminGroup): boolean {
+  return (group.scope ?? "public") === "public" && group.owner_user_id == null;
 }
 
 function findNextAvailableSubscriptionGroup(
@@ -8890,6 +8929,10 @@ async function saveSettings() {
       contact_info: form.contact_info,
       doc_url: form.doc_url,
       home_content: form.home_content,
+      home_stats_group_id: Math.max(
+        0,
+        Math.floor(Number(form.home_stats_group_id) || 0),
+      ),
       backend_mode_enabled: form.backend_mode_enabled,
       hide_ccs_import_button: form.hide_ccs_import_button,
       purchase_subscription_enabled: form.purchase_subscription_enabled,

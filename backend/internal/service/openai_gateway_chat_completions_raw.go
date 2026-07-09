@@ -110,6 +110,7 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 	if customUA := account.GetOpenAIUserAgent(); customUA != "" {
 		upstreamReq.Header.Set("user-agent", customUA)
 	}
+	account.ApplyHeaderOverrides(upstreamReq.Header)
 
 	logger.L().Debug("openai chat_completions raw: forwarding without responses conversion",
 		zap.Int64("account_id", account.ID),

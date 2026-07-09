@@ -526,6 +526,9 @@ func (s *CarpoolService) findOrCreateUserCarpoolGroup(ctx context.Context, userI
 	}
 	group, err := s.findUserCarpoolGroup(ctx, userID, platform)
 	if err == nil {
+		if repairErr := s.ensureUserCarpoolGroupDescription(ctx, group, userID, platform); repairErr != nil {
+			slog.Warn("repair_user_carpool_group_description_failed", "group_id", group.ID, "user_id", userID, "platform", platform, "error", repairErr)
+		}
 		return group, nil
 	}
 	if !errors.Is(err, ErrGroupNotFound) {
@@ -548,7 +551,7 @@ func (s *CarpoolService) findOrCreateUserCarpoolGroup(ctx context.Context, userI
 	ownerID := userID
 	group = &Group{
 		Name:                        CarpoolUserGroupName(userID, platform),
-		Description:                 fmt.Sprintf("Carpool subscription group for user %d on %s.", userID, platform),
+		Description:                 userCarpoolGroupDescription(userID, platform),
 		Platform:                    platform,
 		RateMultiplier:              template.RateMultiplier,
 		IsExclusive:                 true,
@@ -569,6 +572,26 @@ func (s *CarpoolService) findOrCreateUserCarpoolGroup(ctx context.Context, userI
 		return nil, fmt.Errorf("create user carpool group: %w", err)
 	}
 	return group, nil
+}
+
+func (s *CarpoolService) ensureUserCarpoolGroupDescription(ctx context.Context, group *Group, userID int64, platform string) error {
+	if s == nil || s.groupRepo == nil || group == nil {
+		return nil
+	}
+	current := strings.TrimSpace(group.Description)
+	if current != "" && !strings.HasPrefix(current, "Carpool subscription group for user ") {
+		return nil
+	}
+	next := userCarpoolGroupDescription(userID, platform)
+	if current == next {
+		return nil
+	}
+	group.Description = next
+	return s.groupRepo.Update(ctx, group)
+}
+
+func userCarpoolGroupDescription(userID int64, platform string) string {
+	return fmt.Sprintf("拼车池订阅分组，用于用户 %d 的 %s 拼车账号调度。", userID, platform)
 }
 
 func (s *CarpoolService) findUserCarpoolGroup(ctx context.Context, userID int64, platform string) (*Group, error) {

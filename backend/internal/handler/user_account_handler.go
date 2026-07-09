@@ -32,6 +32,7 @@ type UserAccountHandler struct {
 	openaiOAuthService      *service.OpenAIOAuthService
 	geminiOAuthService      *service.GeminiOAuthService
 	antigravityOAuthService *service.AntigravityOAuthService
+	grokOAuthService        *service.GrokOAuthService
 	kiroOAuthService        *service.KiroOAuthService
 	accountBatchTaskService *service.AccountBatchTaskService
 }
@@ -83,6 +84,13 @@ func (h *UserAccountHandler) SetKiroOAuthService(kiroOAuthService *service.KiroO
 		return
 	}
 	h.kiroOAuthService = kiroOAuthService
+}
+
+func (h *UserAccountHandler) SetGrokOAuthService(grokOAuthService *service.GrokOAuthService) {
+	if h == nil {
+		return
+	}
+	h.grokOAuthService = grokOAuthService
 }
 
 type createUserAccountRequest struct {
@@ -213,6 +221,19 @@ type userAntigravityExchangeCodeRequest struct {
 	State     string `json:"state" binding:"required"`
 	Code      string `json:"code" binding:"required"`
 	ProxyID   *int64 `json:"proxy_id"`
+}
+
+type userGrokGenerateAuthURLRequest struct {
+	ProxyID     *int64 `json:"proxy_id"`
+	RedirectURI string `json:"redirect_uri"`
+}
+
+type userGrokExchangeCodeRequest struct {
+	SessionID   string `json:"session_id" binding:"required"`
+	State       string `json:"state" binding:"required"`
+	Code        string `json:"code" binding:"required"`
+	RedirectURI string `json:"redirect_uri"`
+	ProxyID     *int64 `json:"proxy_id"`
 }
 
 type userKiroGenerateAuthURLRequest struct {
@@ -1565,6 +1586,20 @@ func (h *UserAccountHandler) refreshOwnedAccount(ctx context.Context, ownerUserI
 			_, _ = h.setOwnedAccountPrivacy(ctx, ownerUserID, updatedAccount)
 			return updatedAccount, "missing_project_id_temporary", nil
 		}
+	case account.Platform == service.PlatformGrok:
+		if h.grokOAuthService == nil {
+			return nil, "", infraerrors.ServiceUnavailable("GROK_OAUTH_UNAVAILABLE", "Grok OAuth service is not configured")
+		}
+		tokenInfo, err := h.grokOAuthService.RefreshAccountToken(ctx, account)
+		if err != nil {
+			return nil, "", err
+		}
+		newCredentials = h.grokOAuthService.BuildAccountCredentials(tokenInfo)
+		for k, v := range account.Credentials {
+			if _, exists := newCredentials[k]; !exists {
+				newCredentials[k] = v
+			}
+		}
 	default:
 		tokenInfo, err := h.oauthService.RefreshAccountToken(ctx, account)
 		if err != nil {
@@ -1978,6 +2013,67 @@ func (h *UserAccountHandler) ExchangeAntigravityOAuthCode(c *gin.Context) {
 }
 
 func (h *UserAccountHandler) RefreshAntigravityToken(c *gin.Context) {
+	rejectUserManualCredentialAuth(c)
+}
+
+func (h *UserAccountHandler) GenerateGrokOAuthURL(c *gin.Context) {
+	if !requireUserAccountAuth(c) {
+		return
+	}
+	if h.grokOAuthService == nil {
+		response.InternalError(c, "Grok OAuth service is not configured")
+		return
+	}
+	subject, _ := middleware2.GetAuthSubjectFromContext(c)
+	var req userGrokGenerateAuthURLRequest
+	if !bindOptionalJSON(c, &req) {
+		return
+	}
+	proxyID, ok := h.resolveUserOAuthProxyID(c, subject.UserID, req.ProxyID)
+	if !ok {
+		return
+	}
+	result, err := h.grokOAuthService.GenerateAuthURL(c.Request.Context(), proxyID, req.RedirectURI)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *UserAccountHandler) ExchangeGrokOAuthCode(c *gin.Context) {
+	if !requireUserAccountAuth(c) {
+		return
+	}
+	if h.grokOAuthService == nil {
+		response.InternalError(c, "Grok OAuth service is not configured")
+		return
+	}
+	subject, _ := middleware2.GetAuthSubjectFromContext(c)
+	var req userGrokExchangeCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	proxyID, ok := h.resolveUserOAuthProxyID(c, subject.UserID, req.ProxyID)
+	if !ok {
+		return
+	}
+	tokenInfo, err := h.grokOAuthService.ExchangeCode(c.Request.Context(), &service.GrokExchangeCodeInput{
+		SessionID:   req.SessionID,
+		Code:        req.Code,
+		State:       req.State,
+		RedirectURI: req.RedirectURI,
+		ProxyID:     proxyID,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, tokenInfo)
+}
+
+func (h *UserAccountHandler) RefreshGrokToken(c *gin.Context) {
 	rejectUserManualCredentialAuth(c)
 }
 

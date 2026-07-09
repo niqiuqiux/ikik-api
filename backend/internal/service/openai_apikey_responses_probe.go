@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/gjson"
 	"ikik-api/internal/pkg/logger"
 	"ikik-api/internal/pkg/openai"
 	"ikik-api/internal/pkg/openai_compat"
-	"github.com/tidwall/gjson"
 )
 
 const openaiResponsesProbeTimeout = 15 * time.Second
@@ -114,6 +114,7 @@ func (s *AccountTestService) ProbeOpenAIAPIKeyResponsesSupport(ctx context.Conte
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Accept", "application/json")
+	account.ApplyHeaderOverrides(req.Header)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
