@@ -143,7 +143,7 @@ func (s *GatewayService) forwardClaudeWebAsResponses(
 
 func startClaudeWebAnthropicStream(ctx context.Context, account *Account, anthropicBody []byte, options claudeWebStreamOptions) (*http.Response, error) {
 	if account == nil || !account.IsClaudeWebSession() {
-		return nil, fmt.Errorf("Claude Web account is not configured")
+		return nil, fmt.Errorf("claude Web account is not configured")
 	}
 	options.Model = resolveClaudeWebModel(account, options.Model)
 	if err := claudeweb.ValidateModel(options.Model); err != nil {
@@ -323,11 +323,21 @@ func buildClaudeWebPromptMode(body []byte, latestTurnOnly bool) (string, int, er
 		return "", 0, fmt.Errorf("parse Claude Web request: %w", err)
 	}
 	var prompt strings.Builder
+	writePrompt := func(text string) error {
+		_, err := prompt.WriteString(text)
+		return err
+	}
 	if !latestTurnOnly {
 		if system := claudeWebRawContentText(request.System); system != "" {
-			prompt.WriteString("System: ")
-			prompt.WriteString(system)
-			prompt.WriteString("\n\n")
+			if err := writePrompt("System: "); err != nil {
+				return "", 0, err
+			}
+			if err := writePrompt(system); err != nil {
+				return "", 0, err
+			}
+			if err := writePrompt("\n\n"); err != nil {
+				return "", 0, err
+			}
 		}
 	}
 	messages := request.Messages
@@ -337,16 +347,24 @@ func buildClaudeWebPromptMode(body []byte, latestTurnOnly bool) (string, int, er
 	for _, message := range messages {
 		switch strings.ToLower(strings.TrimSpace(message.Role)) {
 		case "assistant":
-			prompt.WriteString("Assistant: ")
+			if err := writePrompt("Assistant: "); err != nil {
+				return "", 0, err
+			}
 		default:
-			prompt.WriteString("Human: ")
+			if err := writePrompt("Human: "); err != nil {
+				return "", 0, err
+			}
 		}
-		prompt.WriteString(claudeWebRawContentText(message.Content))
-		prompt.WriteString("\n\n")
+		if err := writePrompt(claudeWebRawContentText(message.Content)); err != nil {
+			return "", 0, err
+		}
+		if err := writePrompt("\n\n"); err != nil {
+			return "", 0, err
+		}
 	}
 	text := strings.TrimSpace(prompt.String())
 	if text == "" {
-		return "", 0, fmt.Errorf("Claude Web request contains no text content")
+		return "", 0, fmt.Errorf("claude Web request contains no text content")
 	}
 	return text, anthropictokenizer.CountTokens(text), nil
 }
@@ -443,7 +461,7 @@ func collectClaudeWebAnthropicResponse(body io.Reader) (*apicompat.AnthropicResp
 		return nil, usage, fmt.Errorf("read Claude Web response: %w", err)
 	}
 	if response == nil {
-		return nil, usage, fmt.Errorf("Claude Web stream ended without a response")
+		return nil, usage, fmt.Errorf("claude Web stream ended without a response")
 	}
 	response.Usage = apicompat.AnthropicUsage{
 		InputTokens:              usage.InputTokens,

@@ -234,7 +234,7 @@ func (h *GrokOAuthHandler) ResetQuota(c *gin.Context) {
 		return
 	}
 	result, err := h.quotaService.ResetQuota(c.Request.Context(), accountID)
-	if err != nil {
+	if err != nil { //nolint:staticcheck // ResetQuota currently returns the unsupported operation error by design.
 		response.ErrorFrom(c, err)
 		return
 	}

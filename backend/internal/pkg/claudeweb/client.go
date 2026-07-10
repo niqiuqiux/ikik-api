@@ -61,7 +61,7 @@ func newClient(credentials Credentials, proxyURL, baseURL string) (*Client, erro
 		credentials.SessionKey = cookieValue(credentials.BrowserCookie, "sessionKey")
 	}
 	if credentials.SessionKey == "" {
-		return nil, fmt.Errorf("Claude Web session key is required")
+		return nil, fmt.Errorf("claude Web session key is required")
 	}
 	if credentials.AuthMode != AuthModeFullCookie {
 		credentials.AuthMode = AuthModeSessionKey
@@ -103,7 +103,7 @@ func (c *Client) Validate(ctx context.Context) error {
 
 func (c *Client) ResolveOrganization(ctx context.Context) (string, error) {
 	if c == nil {
-		return "", fmt.Errorf("Claude Web client is not configured")
+		return "", fmt.Errorf("claude Web client is not configured")
 	}
 	if organizationID := strings.TrimSpace(c.credentials.OrgUUID); organizationID != "" {
 		return organizationID, nil
@@ -126,7 +126,7 @@ func (c *Client) ResolveOrganization(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("decode Claude Web organizations: %w", err)
 	}
 	if len(organizations) == 0 {
-		return "", fmt.Errorf("Claude Web returned no organizations")
+		return "", fmt.Errorf("claude Web returned no organizations")
 	}
 
 	for _, organization := range organizations {
@@ -154,14 +154,14 @@ func (c *Client) rememberOrganization(organizationID string) string {
 
 func (c *Client) StartCompletion(ctx context.Context, options CompletionOptions) (*CompletionStream, error) {
 	if c == nil {
-		return nil, fmt.Errorf("Claude Web client is not configured")
+		return nil, fmt.Errorf("claude Web client is not configured")
 	}
 	options = normalizeCompletionOptions(options)
 	if err := ValidateModel(options.Model); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(options.Prompt) == "" {
-		return nil, fmt.Errorf("Claude Web prompt is required")
+		return nil, fmt.Errorf("claude Web prompt is required")
 	}
 	organizationID, err := c.ResolveOrganization(ctx)
 	if err != nil {
@@ -248,7 +248,7 @@ func (c *Client) createConversation(ctx context.Context, organizationID string) 
 		return "", fmt.Errorf("decode Claude Web conversation: %w", err)
 	}
 	if strings.TrimSpace(result.UUID) == "" {
-		return "", fmt.Errorf("Claude Web conversation response missing uuid")
+		return "", fmt.Errorf("claude Web conversation response missing uuid")
 	}
 	return strings.TrimSpace(result.UUID), nil
 }

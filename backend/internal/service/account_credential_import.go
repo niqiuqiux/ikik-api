@@ -407,7 +407,7 @@ func accountCredentialImportSourceFromClaudeWeb(item map[string]any, requestedAu
 		claudeWebCookieValue(browserCookie, "sessionKey"),
 	)
 	if sessionKey == "" {
-		return AccountCredentialImportSource{}, true, fmt.Errorf("Claude Web cookies must include sessionKey")
+		return AccountCredentialImportSource{}, true, fmt.Errorf("claude Web cookies must include sessionKey")
 	}
 	if _, ok := extractClaudeSessionKey(sessionKey); !ok {
 		return AccountCredentialImportSource{}, true, fmt.Errorf("invalid Claude Web sessionKey")
@@ -424,7 +424,7 @@ func accountCredentialImportSourceFromClaudeWeb(item map[string]any, requestedAu
 	)
 	authMode := normalizeClaudeWebImportAuthMode(requestedAuthMode, importStringField(item, "auth_mode", "authMode", "cookie_mode", "cookieMode"))
 	if authMode == ClaudeWebAuthModeFullCookie && browserCookie == "" {
-		return AccountCredentialImportSource{}, true, fmt.Errorf("Claude Web full-cookie mode requires browser cookies")
+		return AccountCredentialImportSource{}, true, fmt.Errorf("claude Web full-cookie mode requires browser cookies")
 	}
 
 	credentials := map[string]any{

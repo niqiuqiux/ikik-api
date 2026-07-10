@@ -96,25 +96,28 @@ func ConvertStream(ctx context.Context, source io.Reader, destination io.Writer,
 					blockType = "thinking"
 				}
 				startedBlocks[index] = blockType
+				contentBlock := map[string]any{
+					"type": blockType,
+					"text": "",
+				}
 				start := map[string]any{
-					"type":  "content_block_start",
-					"index": index,
-					"content_block": map[string]any{
-						"type": blockType,
-						"text": "",
-					},
+					"type":          "content_block_start",
+					"index":         index,
+					"content_block": contentBlock,
 				}
 				if blockType == "thinking" {
-					start["content_block"].(map[string]any)["thinking"] = ""
-					delete(start["content_block"].(map[string]any), "text")
+					contentBlock["thinking"] = ""
+					delete(contentBlock, "text")
 				}
 				if err := writeSSE(destination, "content_block_start", start); err != nil {
 					return err
 				}
 			}
-			outputText.WriteString(delta.Text)
-			outputText.WriteString(delta.Thinking)
-			outputText.WriteString(delta.PartialJSON)
+			for _, text := range []string{delta.Text, delta.Thinking, delta.PartialJSON} {
+				if _, err := outputText.WriteString(text); err != nil {
+					return err
+				}
+			}
 			return writeRawSSE(destination, event.Type, rawPayload)
 		case "content_block_stop":
 			return writeRawSSE(destination, event.Type, rawPayload)
