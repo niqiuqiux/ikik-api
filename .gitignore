@@ -148,3 +148,4 @@ test/images/
 nul
 /issues/
 /.codex_tmp/
+/.playwright-cli/
