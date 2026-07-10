@@ -50,7 +50,7 @@ describe('TokenUsageTrend', () => {
     })
 
     const chartData = JSON.parse(wrapper.find('.chart-data').text())
-    const hitRateDataset = chartData.datasets.find((ds: any) => ds.label === 'Cache Hit Rate')
+    const hitRateDataset = chartData.datasets.find((ds: any) => ds.yAxisID === 'yPercent')
     expect(hitRateDataset.data[0]).toBe(75)
   })
 
@@ -78,7 +78,7 @@ describe('TokenUsageTrend', () => {
     })
 
     const chartData = JSON.parse(wrapper.find('.chart-data').text())
-    const hitRateDataset = chartData.datasets.find((ds: any) => ds.label === 'Cache Hit Rate')
+    const hitRateDataset = chartData.datasets.find((ds: any) => ds.yAxisID === 'yPercent')
     expect(hitRateDataset.data[0]).toBe(50)
   })
 })

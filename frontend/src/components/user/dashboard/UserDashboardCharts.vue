@@ -75,6 +75,7 @@ import { Doughnut } from 'vue-chartjs'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import type { TrendDataPoint, ModelStat } from '@/types'
 import { formatCostFixed as formatCost, formatNumberLocaleString as formatNumber, formatTokensK as formatTokens } from '@/utils/format'
+import { chartPaletteFor } from '@/utils/chartPalette'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler)
 
@@ -83,16 +84,11 @@ defineEmits(['update:startDate', 'update:endDate', 'update:granularity', 'dateRa
 const { t } = useI18n()
 const isDarkMode = useDarkMode()
 
-const modelPalette = computed(() => isDarkMode.value
-  ? ['#19c37d', '#f2f2f2', '#b4b4b4', '#7f7f7f', '#5c6f68', '#c8bfb5', '#8b9d96', '#5f5f5f']
-  : ['#10a37f', '#171717', '#707070', '#a3a3a3', '#5c6f68', '#8b7d6b', '#8b9d96', '#d0d0d0']
-)
-
 const modelData = computed(() => !props.models?.length ? null : {
   labels: props.models.map((m: ModelStat) => m.model),
   datasets: [{
     data: props.models.map((m: ModelStat) => m.total_tokens),
-    backgroundColor: modelPalette.value,
+    backgroundColor: chartPaletteFor(props.models.length),
     borderColor: isDarkMode.value ? '#212121' : '#ffffff',
     borderWidth: 3,
     hoverOffset: 3

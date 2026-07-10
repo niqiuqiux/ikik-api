@@ -52,6 +52,7 @@
           :columns="columns"
           :data="apiKeys"
           :loading="loading"
+          :card-rows="true"
           :sticky-actions-column="false"
           :server-side-sort="true"
           default-sort-key="created_at"

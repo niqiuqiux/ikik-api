@@ -37,6 +37,7 @@ import { Line } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { UiSection } from '@/ui'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { DASHBOARD_TREND_COLORS } from '@/utils/chartPalette'
 import type { TrendDataPoint } from '@/types'
 
 ChartJS.register(
@@ -63,11 +64,7 @@ const isDarkMode = useDarkMode()
 const chartColors = computed(() => ({
   text: isDarkMode.value ? '#b4b4b4' : '#676767',
   grid: isDarkMode.value ? '#343434' : '#ececec',
-  input: isDarkMode.value ? '#19c37d' : '#10a37f',
-  output: isDarkMode.value ? '#f2f2f2' : '#171717',
-  cacheCreation: isDarkMode.value ? '#a6a6a6' : '#6f6f6f',
-  cacheRead: isDarkMode.value ? '#707070' : '#a3a3a3',
-  cacheHitRate: isDarkMode.value ? '#c8bfb5' : '#8b7d6b'
+  ...DASHBOARD_TREND_COLORS
 }))
 
 const chartData = computed(() => {

@@ -1,5 +1,9 @@
 <template>
-  <div v-if="!isDesktopViewport" class="space-y-3">
+  <div
+    v-if="!isDesktopViewport"
+    class="space-y-3"
+    :class="{ 'mobile-card-rows': cardRows }"
+  >
     <template v-if="loading">
       <div v-for="i in 5" :key="i" class="mobile-data-card">
         <div class="space-y-3">
@@ -61,7 +65,8 @@
     class="table-wrapper"
     :class="{
       'actions-expanded': actionsExpanded,
-      'is-scrollable': isScrollable
+      'is-scrollable': isScrollable,
+      'card-rows': cardRows
     }"
   >
     <table class="app-data-table w-full min-w-max">
@@ -353,6 +358,8 @@ interface Props {
   estimateRowHeight?: number
   /** Number of rows to render beyond the visible area (default 5) */
   overscan?: number
+  /** Render each row as an independent card while preserving table semantics. */
+  cardRows?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -361,7 +368,8 @@ const props = withDefaults(defineProps<Props>(), {
   stickyActionsColumn: true,
   expandableActions: true,
   defaultSortOrder: 'asc',
-  serverSideSort: false
+  serverSideSort: false,
+  cardRows: false
 })
 
 const sortKey = ref<string>('')
@@ -919,6 +927,47 @@ tbody tr:hover .sticky-col {
   background: var(--table-hover-surface);
 }
 
+.table-wrapper.card-rows {
+  border-top: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.card-rows .app-data-table {
+  border-spacing: 0 0.5rem;
+}
+
+.card-rows .sticky-header-cell {
+  border-bottom: 0;
+}
+
+.card-rows .data-table-cell {
+  border-top: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035);
+}
+
+.card-rows .data-table-cell:first-child {
+  border-left: 1px solid var(--app-border);
+  border-radius: 8px 0 0 8px;
+}
+
+.card-rows .data-table-cell:last-child {
+  border-right: 1px solid var(--app-border);
+  border-radius: 0 8px 8px 0;
+}
+
+.card-rows tbody .sticky-col,
+.dark .card-rows tbody .sticky-col {
+  background: var(--app-surface);
+}
+
+.card-rows .data-table-row:hover .data-table-cell,
+.card-rows .data-table-row:hover .sticky-col {
+  background: var(--table-hover-surface);
+}
+
 tbody .sticky-col,
 .dark tbody .sticky-col {
   background-color: var(--table-surface);
@@ -948,6 +997,14 @@ tbody .sticky-col,
 
 .mobile-data-card {
   padding: 0.875rem 0;
+}
+
+.mobile-card-rows .mobile-data-card {
+  padding: 1rem;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035);
 }
 
 .mobile-data-empty {
