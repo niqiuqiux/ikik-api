@@ -397,15 +397,9 @@ func parseOpenAIWSResponseUsageFromCompletedEvent(message []byte, usage *OpenAIU
 	if usage == nil || len(message) == 0 {
 		return
 	}
-	values := gjson.GetManyBytes(
-		message,
-		"response.usage.input_tokens",
-		"response.usage.output_tokens",
-		"response.usage.input_tokens_details.cached_tokens",
-	)
-	usage.InputTokens = int(values[0].Int())
-	usage.OutputTokens = int(values[1].Int())
-	usage.CacheReadInputTokens = int(values[2].Int())
+	if parsed, ok := openAIUsageFromGJSON(gjson.GetBytes(message, "response.usage")); ok {
+		*usage = parsed
+	}
 }
 
 func parseOpenAIWSErrorEventFields(message []byte) (code string, errType string, errMessage string) {
@@ -880,6 +874,7 @@ func isOpenAIWSClientDisconnectError(err error) bool {
 		strings.Contains(message, "use of closed network connection") ||
 		strings.Contains(message, "connection reset by peer") ||
 		strings.Contains(message, "broken pipe") ||
+		strings.Contains(message, "an existing connection was forcibly closed by the remote host") ||
 		strings.Contains(message, "an established connection was aborted")
 }
 
@@ -2558,7 +2553,7 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 		Model:           originalModel,
 		UpstreamModel:   mappedModel,
 		ServiceTier:     extractOpenAIServiceTier(reqBody),
-		ReasoningEffort: extractOpenAIReasoningEffort(reqBody, originalModel),
+		ReasoningEffort: extractOpenAIReasoningEffort(reqBody, firstNonEmpty(mappedModel, originalModel)),
 		Stream:          reqStream,
 		OpenAIWSMode:    true,
 		ResponseHeaders: lease.HandshakeHeaders(),
@@ -3253,7 +3248,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 					Model:           originalModel,
 					UpstreamModel:   mappedModel,
 					ServiceTier:     extractOpenAIServiceTierFromBody(payload),
-					ReasoningEffort: extractOpenAIReasoningEffortFromBody(payload, originalModel),
+					ReasoningEffort: extractOpenAIReasoningEffortFromBody(payload, firstNonEmpty(mappedModel, originalModel)),
 					Stream:          reqStream,
 					OpenAIWSMode:    true,
 					ResponseHeaders: lease.HandshakeHeaders(),
@@ -4151,15 +4146,9 @@ func populateOpenAIUsageFromResponseJSON(body []byte, usage *OpenAIUsage) {
 	if usage == nil || len(body) == 0 {
 		return
 	}
-	values := gjson.GetManyBytes(
-		body,
-		"usage.input_tokens",
-		"usage.output_tokens",
-		"usage.input_tokens_details.cached_tokens",
-	)
-	usage.InputTokens = int(values[0].Int())
-	usage.OutputTokens = int(values[1].Int())
-	usage.CacheReadInputTokens = int(values[2].Int())
+	if parsed, ok := extractOpenAIUsageFromJSONBytes(body); ok {
+		*usage = parsed
+	}
 }
 
 func getOpenAIGroupIDFromContext(c *gin.Context) int64 {

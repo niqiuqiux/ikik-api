@@ -195,32 +195,14 @@ func extractOpenAIEmbeddingsUsage(body []byte) OpenAIUsage {
 	if !usage.Exists() || !usage.IsObject() {
 		return OpenAIUsage{}
 	}
-	inputTokens := firstPositiveGJSONInt(
-		usage.Get("prompt_tokens"),
-		usage.Get("input_tokens"),
-		usage.Get("total_tokens"),
-	)
-	outputTokens := firstPositiveGJSONInt(
-		usage.Get("completion_tokens"),
-		usage.Get("output_tokens"),
-	)
-	cacheReadTokens := firstPositiveGJSONInt(
-		usage.Get("prompt_tokens_details.cached_tokens"),
-		usage.Get("input_tokens_details.cached_tokens"),
-		usage.Get("cache_read_tokens"),
-		usage.Get("cache_read_input_tokens"),
-	)
-	cacheCreationTokens := firstPositiveGJSONInt(
-		usage.Get("cache_creation_tokens"),
-		usage.Get("cache_creation_input_tokens"),
-		usage.Get("input_tokens_details.cache_creation_tokens"),
-	)
-	return OpenAIUsage{
-		InputTokens:              inputTokens,
-		OutputTokens:             outputTokens,
-		CacheReadInputTokens:     cacheReadTokens,
-		CacheCreationInputTokens: cacheCreationTokens,
+	parsed, ok := openAIUsageFromGJSON(usage)
+	if !ok {
+		return OpenAIUsage{}
 	}
+	if parsed.InputTokens == 0 {
+		parsed.InputTokens = firstPositiveGJSONInt(usage.Get("total_tokens"))
+	}
+	return parsed
 }
 
 func firstPositiveGJSONInt(values ...gjson.Result) int {

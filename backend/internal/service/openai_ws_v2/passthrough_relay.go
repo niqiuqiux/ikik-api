@@ -697,9 +697,19 @@ func parseUsageAndAccumulate(
 		return Usage{}
 	}
 
-	inputResult := gjson.GetBytes(message, "response.usage.input_tokens")
-	outputResult := gjson.GetBytes(message, "response.usage.output_tokens")
-	cachedResult := gjson.GetBytes(message, "response.usage.input_tokens_details.cached_tokens")
+	inputResult := usageResult.Get("input_tokens")
+	if !inputResult.Exists() {
+		inputResult = usageResult.Get("prompt_tokens")
+	}
+	outputResult := usageResult.Get("output_tokens")
+	if !outputResult.Exists() {
+		outputResult = usageResult.Get("completion_tokens")
+	}
+	cachedResult := usageResult.Get("input_tokens_details.cached_tokens")
+	if !cachedResult.Exists() {
+		cachedResult = usageResult.Get("prompt_tokens_details.cached_tokens")
+	}
+	cacheCreationTokens := openAICacheCreationTokensFromUsage(usageResult)
 
 	inputTokens, inputOK := parseUsageIntField(inputResult, true)
 	outputTokens, outputOK := parseUsageIntField(outputResult, true)
@@ -712,14 +722,19 @@ func parseUsageAndAccumulate(
 		// 解析失败时不做部分字段累加，避免计费 usage 出现“半有效”状态。
 		return Usage{}
 	}
+	if cachedTokens == 0 {
+		cachedTokens = openAICacheReadTokensFromUsage(usageResult)
+	}
 	parsedUsage := Usage{
-		InputTokens:          inputTokens,
-		OutputTokens:         outputTokens,
-		CacheReadInputTokens: cachedTokens,
+		InputTokens:              inputTokens,
+		OutputTokens:             outputTokens,
+		CacheCreationInputTokens: cacheCreationTokens,
+		CacheReadInputTokens:     cachedTokens,
 	}
 
 	state.usage.InputTokens += parsedUsage.InputTokens
 	state.usage.OutputTokens += parsedUsage.OutputTokens
+	state.usage.CacheCreationInputTokens += parsedUsage.CacheCreationInputTokens
 	state.usage.CacheReadInputTokens += parsedUsage.CacheReadInputTokens
 	return parsedUsage
 }
@@ -732,6 +747,39 @@ func parseUsageIntField(value gjson.Result, required bool) (int, bool) {
 		return 0, false
 	}
 	return int(value.Int()), true
+}
+
+func openAICacheCreationTokensFromUsage(value gjson.Result) int {
+	for _, field := range []string{
+		"input_tokens_details.cache_write_tokens",
+		"prompt_tokens_details.cache_write_tokens",
+		"input_tokens_details.cache_creation_tokens",
+		"prompt_tokens_details.cache_creation_tokens",
+		"cache_write_tokens",
+		"cache_creation_input_tokens",
+		"cache_write_input_tokens",
+		"cache_creation_tokens",
+	} {
+		if tokens := int(value.Get(field).Int()); tokens > 0 {
+			return tokens
+		}
+	}
+	return 0
+}
+
+func openAICacheReadTokensFromUsage(value gjson.Result) int {
+	for _, field := range []string{
+		"input_tokens_details.cached_tokens",
+		"prompt_tokens_details.cached_tokens",
+		"cache_read_input_tokens",
+		"cache_read_tokens",
+		"cached_tokens",
+	} {
+		if tokens := int(value.Get(field).Int()); tokens > 0 {
+			return tokens
+		}
+	}
+	return 0
 }
 
 func enrichResult(result *RelayResult, state *relayState, duration time.Duration) {

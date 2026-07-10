@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,7 +15,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
-	"ikik-api/internal/pkg/apicompat"
 	"ikik-api/internal/pkg/logger"
 	"ikik-api/internal/util/responseheaders"
 )
@@ -41,11 +39,11 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		return nil, fmt.Errorf("missing model in request")
 	}
 	clientStream := gjson.GetBytes(body, "stream").Bool()
-	reasoningEffort := extractOpenAIReasoningEffortFromBody(body, originalModel)
 	serviceTier := extractOpenAIServiceTierFromBody(body)
 
 	billingModel := resolveOpenAIForwardModel(account, originalModel, defaultMappedModel)
 	upstreamModel := normalizeOpenAIModelForUpstream(account, billingModel)
+	reasoningEffort := extractOpenAIReasoningEffortFromBody(body, firstNonEmpty(upstreamModel, billingModel, originalModel))
 
 	upstreamBody := body
 	if upstreamModel != originalModel {
@@ -294,12 +292,9 @@ func extractCCStreamUsage(payload string) *OpenAIUsage {
 	if !usageResult.Exists() || !usageResult.IsObject() {
 		return nil
 	}
-	u := OpenAIUsage{
-		InputTokens:  int(gjson.Get(payload, "usage.prompt_tokens").Int()),
-		OutputTokens: int(gjson.Get(payload, "usage.completion_tokens").Int()),
-	}
-	if cached := gjson.Get(payload, "usage.prompt_tokens_details.cached_tokens"); cached.Exists() {
-		u.CacheReadInputTokens = int(cached.Int())
+	u, ok := openAIUsageFromGJSON(usageResult)
+	if !ok {
+		return nil
 	}
 	return &u
 }
@@ -324,16 +319,9 @@ func (s *OpenAIGatewayService) bufferRawChatCompletions(
 		return nil, fmt.Errorf("read upstream body: %w", err)
 	}
 
-	var ccResp apicompat.ChatCompletionsResponse
 	var usage OpenAIUsage
-	if err := json.Unmarshal(respBody, &ccResp); err == nil && ccResp.Usage != nil {
-		usage = OpenAIUsage{
-			InputTokens:  ccResp.Usage.PromptTokens,
-			OutputTokens: ccResp.Usage.CompletionTokens,
-		}
-		if ccResp.Usage.PromptTokensDetails != nil {
-			usage.CacheReadInputTokens = ccResp.Usage.PromptTokensDetails.CachedTokens
-		}
+	if parsed, ok := openAIUsageFromGJSON(gjson.GetBytes(respBody, "usage")); ok {
+		usage = parsed
 	}
 
 	if s.responseHeaderFilter != nil {

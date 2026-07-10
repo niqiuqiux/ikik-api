@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"ikik-api/internal/config"
 	"ikik-api/internal/pkg/ctxkey"
-	"github.com/stretchr/testify/require"
 )
 
 type openAIRecordUsageLogRepoStub struct {
@@ -255,7 +255,7 @@ func expectedOpenAICost(t *testing.T, svc *OpenAIGatewayService, model string, u
 	t.Helper()
 
 	cost, err := svc.billingService.CalculateCost(model, UsageTokens{
-		InputTokens:         max(usage.InputTokens-usage.CacheReadInputTokens, 0),
+		InputTokens:         max(usage.InputTokens-usage.CacheReadInputTokens-usage.CacheCreationInputTokens, 0),
 		OutputTokens:        usage.OutputTokens,
 		CacheCreationTokens: usage.CacheCreationInputTokens,
 		CacheReadTokens:     usage.CacheReadInputTokens,
@@ -269,6 +269,36 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func TestOpenAIGatewayServiceRecordUsage_SeparatesCacheReadAndWriteFromInput(t *testing.T) {
+	usage := OpenAIUsage{
+		InputTokens:              100,
+		OutputTokens:             10,
+		CacheCreationInputTokens: 30,
+		CacheReadInputTokens:     20,
+	}
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, &openAIRecordUsageSubRepoStub{}, &openAIUserGroupRateRepoStub{})
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_cache_write_accounting",
+			Usage:     usage,
+			Model:     "gpt-5.6-terra",
+			Duration:  time.Second,
+		},
+		APIKey:  &APIKey{ID: 1000, Group: &Group{RateMultiplier: 1}},
+		User:    &User{ID: 2000},
+		Account: &Account{ID: 3000},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, 50, usageRepo.lastLog.InputTokens)
+	require.Equal(t, 30, usageRepo.lastLog.CacheCreationTokens)
+	require.Equal(t, 20, usageRepo.lastLog.CacheReadTokens)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_UsesUserSpecificGroupRate(t *testing.T) {

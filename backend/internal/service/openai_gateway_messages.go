@@ -361,17 +361,15 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 
 		// Terminal events carry the complete ResponsesResponse with output + usage.
 		if (event.Type == "response.completed" || event.Type == "response.done" ||
+			event.Type == "response.incomplete" || event.Type == "response.failed") && event.Usage != nil {
+			usage = copyOpenAIUsageFromResponsesUsage(event.Usage)
+		}
+		if (event.Type == "response.completed" || event.Type == "response.done" ||
 			event.Type == "response.incomplete" || event.Type == "response.failed") &&
 			event.Response != nil {
 			finalResponse = event.Response
 			if event.Response.Usage != nil {
-				usage = OpenAIUsage{
-					InputTokens:  event.Response.Usage.InputTokens,
-					OutputTokens: event.Response.Usage.OutputTokens,
-				}
-				if event.Response.Usage.InputTokensDetails != nil {
-					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
-				}
+				usage = copyOpenAIUsageFromResponsesUsage(event.Response.Usage)
 			}
 		}
 	}
@@ -482,15 +480,12 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 		}
 
 		// Extract usage from completion events
+		if (event.Type == "response.completed" || event.Type == "response.incomplete" || event.Type == "response.failed") && event.Usage != nil {
+			usage = copyOpenAIUsageFromResponsesUsage(event.Usage)
+		}
 		if (event.Type == "response.completed" || event.Type == "response.incomplete" || event.Type == "response.failed") &&
 			event.Response != nil && event.Response.Usage != nil {
-			usage = OpenAIUsage{
-				InputTokens:  event.Response.Usage.InputTokens,
-				OutputTokens: event.Response.Usage.OutputTokens,
-			}
-			if event.Response.Usage.InputTokensDetails != nil {
-				usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
-			}
+			usage = copyOpenAIUsageFromResponsesUsage(event.Response.Usage)
 		}
 
 		// Convert to Anthropic events
@@ -630,6 +625,31 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			c.Writer.Flush()
 		}
 	}
+}
+
+func copyOpenAIUsageFromResponsesUsage(usage *apicompat.ResponsesUsage) OpenAIUsage {
+	if usage == nil {
+		return OpenAIUsage{}
+	}
+	result := OpenAIUsage{
+		InputTokens:              usage.InputTokens,
+		OutputTokens:             usage.OutputTokens,
+		CacheCreationInputTokens: usage.CacheCreationInputTokens,
+	}
+	if usage.InputTokensDetails != nil {
+		result.CacheReadInputTokens = usage.InputTokensDetails.CachedTokens
+		if result.CacheCreationInputTokens == 0 {
+			if usage.InputTokensDetails.CacheWriteTokens > 0 {
+				result.CacheCreationInputTokens = usage.InputTokensDetails.CacheWriteTokens
+			} else {
+				result.CacheCreationInputTokens = usage.InputTokensDetails.CacheCreationTokens
+			}
+		}
+	}
+	if usage.OutputTokensDetails != nil {
+		result.ReasoningTokens = usage.OutputTokensDetails.ReasoningTokens
+	}
+	return result
 }
 
 // writeAnthropicError writes an error response in Anthropic Messages API format.

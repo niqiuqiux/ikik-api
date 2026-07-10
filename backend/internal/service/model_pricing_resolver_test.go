@@ -225,12 +225,12 @@ func TestResolve_WithChannelOverride_TokenFlat(t *testing.T) {
 	require.Equal(t, "channel", resolved.Source)
 	require.NotNil(t, resolved.BasePricing)
 	require.InDelta(t, 10e-6, resolved.BasePricing.InputPricePerToken, 1e-12)
-	require.Zero(t, resolved.BasePricing.InputPricePerTokenPriority)
+	require.InDelta(t, 10e-6, resolved.BasePricing.InputPricePerTokenPriority, 1e-12)
 	require.InDelta(t, 50e-6, resolved.BasePricing.OutputPricePerToken, 1e-12)
-	require.Zero(t, resolved.BasePricing.OutputPricePerTokenPriority)
+	require.InDelta(t, 50e-6, resolved.BasePricing.OutputPricePerTokenPriority, 1e-12)
 }
 
-func TestResolve_WithChannelOverride_PriorityUsesTierMultiplierOnChannelPrice(t *testing.T) {
+func TestResolve_WithChannelOverride_PriorityUsesChannelPriceWithoutExtraMultiplier(t *testing.T) {
 	r := newResolverWithChannel(t, []ChannelModelPricing{{
 		Platform:       "anthropic",
 		Models:         []string{"gpt-5.5"},
@@ -257,11 +257,11 @@ func TestResolve_WithChannelOverride_PriorityUsesTierMultiplierOnChannelPrice(t 
 	})
 
 	require.NoError(t, err)
-	require.InDelta(t, 1, cost.InputCost, 1e-12)
-	require.InDelta(t, 6, cost.OutputCost, 1e-12)
-	require.InDelta(t, 0.01, cost.CacheReadCost, 1e-12)
-	require.InDelta(t, 7.01, cost.TotalCost, 1e-12)
-	require.InDelta(t, 0.4206, cost.ActualCost, 1e-12)
+	require.InDelta(t, 0.5, cost.InputCost, 1e-12)
+	require.InDelta(t, 3, cost.OutputCost, 1e-12)
+	require.InDelta(t, 0.005, cost.CacheReadCost, 1e-12)
+	require.InDelta(t, 3.505, cost.TotalCost, 1e-12)
+	require.InDelta(t, 0.2103, cost.ActualCost, 1e-12)
 }
 
 func TestResolve_WithChannelOverride_TokenPartialOverride(t *testing.T) {

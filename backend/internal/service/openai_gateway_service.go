@@ -2345,6 +2345,14 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		return nil, errors.New("codex_cli_only restriction: only codex official clients are allowed")
 	}
 
+	normalizedBody, normalized, err := normalizeOpenAICodexCompactReasoningEffortForAccount(c, account, body)
+	if err != nil {
+		return nil, err
+	}
+	if normalized {
+		body = normalizedBody
+	}
+
 	originalBody := body
 	requestView := newOpenAIRequestView(body)
 	reqModel, reqStream, promptCacheKey := requestView.Model, requestView.Stream, requestView.PromptCacheKey
@@ -2389,7 +2397,8 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 	passthroughEnabled := account.IsOpenAIPassthroughEnabled()
 	if passthroughEnabled {
 		// 闁繋绱堕崚鍡樻暜閸欘亪娓剁憰浣戒氦闁插繑褰侀崣鏍х摟濞堢绱濋柆鍨帳閻戭叀鐭惧鍕弿闁?Unmarshal閵?
-		reasoningEffort := extractOpenAIReasoningEffortFromBody(body, reqModel)
+		mappedModel := account.GetMappedModel(reqModel)
+		reasoningEffort := extractOpenAIReasoningEffortFromBody(body, mappedModel)
 		return s.forwardOpenAIPassthrough(ctx, c, account, originalBody, reqModel, reasoningEffort, reqStream, startTime)
 	}
 
@@ -3057,7 +3066,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 			usage = &OpenAIUsage{}
 		}
 
-		reasoningEffort := extractOpenAIReasoningEffort(reqBody, originalModel)
+		reasoningEffort := extractOpenAIReasoningEffort(reqBody, firstNonEmpty(upstreamModel, billingModel, originalModel))
 		serviceTier := extractOpenAIServiceTier(reqBody)
 		imageSize := ""
 		imageBillingModel := ""
@@ -4850,42 +4859,24 @@ func (s *OpenAIGatewayService) parseSSEUsageBytes(data []byte, usage *OpenAIUsag
 		return
 	}
 	eventType := gjson.GetBytes(data, "type").String()
-	if eventType != "response.completed" && eventType != "response.done" &&
+	if eventType != "response.completed" && eventType != "response.done" && eventType != "response.failed" &&
 		eventType != "response.incomplete" && eventType != "response.cancelled" && eventType != "response.canceled" {
 		return
 	}
 
-	usage.InputTokens = int(gjson.GetBytes(data, "response.usage.input_tokens").Int())
-	usage.OutputTokens = int(gjson.GetBytes(data, "response.usage.output_tokens").Int())
-	usage.CacheReadInputTokens = int(gjson.GetBytes(data, "response.usage.input_tokens_details.cached_tokens").Int())
-	usage.ReasoningTokens = extractReasoningTokensFromJSONBytes(data)
-	usage.ImageOutputTokens = int(gjson.GetBytes(data, "response.usage.output_tokens_details.image_tokens").Int())
+	if parsedUsage, ok := extractOpenAIUsageFromJSONBytes(data); ok {
+		*usage = parsedUsage
+	}
 }
 
 func extractOpenAIUsageFromJSONBytes(body []byte) (OpenAIUsage, bool) {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return OpenAIUsage{}, false
 	}
-	values := gjson.GetManyBytes(
-		body,
-		"usage.input_tokens",
-		"usage.output_tokens",
-		"usage.input_tokens_details.cached_tokens",
-		"usage.output_tokens_details.reasoning_tokens",
-		"usage.output_tokens_details.image_tokens",
-		"usage.completion_tokens_details.reasoning_tokens",
-	)
-	reasoningTokens := int(values[3].Int())
-	if reasoningTokens == 0 {
-		reasoningTokens = int(values[5].Int())
+	if usage, ok := openAIUsageFromGJSON(gjson.GetBytes(body, "usage")); ok {
+		return usage, true
 	}
-	return OpenAIUsage{
-		InputTokens:          int(values[0].Int()),
-		OutputTokens:         int(values[1].Int()),
-		CacheReadInputTokens: int(values[2].Int()),
-		ReasoningTokens:      reasoningTokens,
-		ImageOutputTokens:    int(values[4].Int()),
-	}, true
+	return openAIUsageFromGJSON(gjson.GetBytes(body, "response.usage"))
 }
 
 func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, originalModel, mappedModel string) (*OpenAIUsage, int, error) {
@@ -5351,6 +5342,30 @@ func normalizeOpenAICompactRequestBody(body []byte) ([]byte, bool, error) {
 	return normalized, true, nil
 }
 
+func normalizeOpenAICodexCompactReasoningEffortForAccount(c *gin.Context, account *Account, body []byte) ([]byte, bool, error) {
+	if account == nil || !account.IsOpenAIOAuth() || !isOpenAIResponsesCompactPath(c) {
+		return body, false, nil
+	}
+
+	requestedModel := strings.TrimSpace(gjson.GetBytes(body, "model").String())
+	effectiveModel := account.GetMappedModel(requestedModel)
+	return normalizeOpenAICodexCompactReasoningEffort(body, effectiveModel)
+}
+
+func normalizeOpenAICodexCompactReasoningEffort(body []byte, effectiveModel string) ([]byte, bool, error) {
+	if !isOpenAIGPT56Model(effectiveModel) ||
+		!strings.EqualFold(strings.TrimSpace(gjson.GetBytes(body, "reasoning.effort").String()), "max") {
+		return body, false, nil
+	}
+
+	// OpenAI OAuth compact currently accepts xhigh rather than GPT-5.6 max.
+	normalized, err := sjson.SetBytes(body, "reasoning.effort", "xhigh")
+	if err != nil {
+		return body, false, fmt.Errorf("normalize codex compact reasoning effort: %w", err)
+	}
+	return normalized, true, nil
+}
+
 func resolveOpenAICompactSessionID(c *gin.Context) string {
 	if c != nil {
 		if sessionID := strings.TrimSpace(c.GetHeader("session_id")); sessionID != "" {
@@ -5447,7 +5462,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	subscription := input.Subscription
 
 	// 鐠侊紕鐣荤€圭偤妾惃鍕煀鏉堟挸鍙唗oken閿涘牆鍣洪崢鑽ょ处鐎涙顕伴崣鏍畱token閿?	// 閸ョ姳璐?input_tokens 閸栧懎鎯堟禍?cache_read_tokens閿涘矁鈧瞼绱︾€涙顕伴崣鏍畱token娑撳秴绨查幐澶庣翻閸忋儰鐜弽鑹邦吀鐠?
-	actualInputTokens := result.Usage.InputTokens - result.Usage.CacheReadInputTokens
+	actualInputTokens := result.Usage.InputTokens - result.Usage.CacheReadInputTokens - result.Usage.CacheCreationInputTokens
 	if actualInputTokens < 0 {
 		actualInputTokens = 0
 	}
@@ -5932,14 +5947,14 @@ func (s *OpenAIGatewayService) UpdateCodexUsageSnapshotFromHeaders(ctx context.C
 	}
 }
 
-func getOpenAIReasoningEffortFromReqBody(reqBody map[string]any) (value string, present bool) {
+func getOpenAIReasoningEffortFromReqBody(reqBody map[string]any, requestedModel string) (value string, present bool) {
 	if reqBody == nil {
 		return "", false
 	}
 
 	for _, path := range openAIReasoningEffortRequestPaths {
 		if raw, ok := getOpenAIStringFromMapPath(reqBody, path); ok {
-			return normalizeOpenAIReasoningEffort(raw), true
+			return normalizeOpenAIReasoningEffortForModel(raw, requestedModel), true
 		}
 	}
 
@@ -5969,7 +5984,7 @@ func deriveOpenAIReasoningEffortFromModel(model string) string {
 		return ""
 	}
 
-	return normalizeOpenAIReasoningEffort(parts[len(parts)-1])
+	return normalizeOpenAIReasoningEffortForModel(parts[len(parts)-1], modelID)
 }
 
 type openAIRequestView struct {
@@ -6164,7 +6179,7 @@ func detectOpenAIPassthroughInstructionsRejectReason(reqModel string, body []byt
 func extractOpenAIReasoningEffortFromBody(body []byte, requestedModel string) *string {
 	reasoningEffort := extractOpenAIReasoningEffortRawFromBody(body)
 	if reasoningEffort != "" {
-		normalized := normalizeOpenAIReasoningEffort(reasoningEffort)
+		normalized := normalizeOpenAIReasoningEffortForModel(reasoningEffort, requestedModel)
 		if normalized == "" {
 			return nil
 		}
@@ -6804,7 +6819,7 @@ func getOpenAIRequestBodyMap(c *gin.Context, body []byte) (map[string]any, error
 }
 
 func extractOpenAIReasoningEffort(reqBody map[string]any, requestedModel string) *string {
-	if value, present := getOpenAIReasoningEffortFromReqBody(reqBody); present {
+	if value, present := getOpenAIReasoningEffortFromReqBody(reqBody, requestedModel); present {
 		if value == "" {
 			return nil
 		}
@@ -6832,10 +6847,27 @@ func normalizeOpenAIReasoningEffort(raw string) string {
 		return ""
 	case "low", "medium", "high":
 		return value
-	case "xhigh", "extrahigh":
+	case "xhigh", "extrahigh", "max":
 		return "xhigh"
 	default:
 		// Only store known effort levels for now to keep UI consistent.
 		return ""
 	}
+}
+
+func normalizeOpenAIReasoningEffortForModel(raw, model string) string {
+	if strings.EqualFold(strings.TrimSpace(raw), "max") && isOpenAIGPT56Model(model) {
+		return "max"
+	}
+	return normalizeOpenAIReasoningEffort(raw)
+}
+
+func isOpenAIGPT56Model(model string) bool {
+	normalized := canonicalizeOpenAIModelAliasSpelling(model)
+	for _, prefix := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
+		if normalized == prefix || strings.HasPrefix(normalized, prefix+"-") {
+			return true
+		}
+	}
+	return false
 }
