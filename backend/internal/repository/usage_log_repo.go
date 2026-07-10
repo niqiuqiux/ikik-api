@@ -299,6 +299,8 @@ func (r *usageLogRepository) CreateBestEffort(ctx context.Context, log *service.
 	case r.bestEffortBatchCh <- req:
 	case <-ctx.Done():
 		return service.MarkUsageLogCreateDropped(ctx.Err())
+	default:
+		return service.MarkUsageLogCreateDropped(errors.New("usage log best-effort queue full"))
 	}
 
 	select {
